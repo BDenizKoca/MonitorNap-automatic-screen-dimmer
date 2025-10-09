@@ -1,0 +1,109 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.8'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install PyQt6 keyboard monitorcontrol Pillow screeninfo pyinstaller
+
+    - name: Install Windows-specific dependencies
+      if: runner.os == 'Windows'
+      run: pip install pywin32
+
+    - name: Build Windows executable
+      if: runner.os == 'Windows'
+      run: |
+        pyinstaller --onefile --windowed --icon=myicon.ico --add-data "myicon.ico;." --noupx -n MonitorNap-Windows --distpath dist/windows --workpath build/windows monitornap.py
+
+    - name: Build non-Windows executable
+      if: runner.os != 'Windows'
+      run: |
+        pyinstaller --onefile --windowed --add-data "myicon.ico:." --noupx -n MonitorNap-${{ runner.os }} --distpath dist/${{ runner.os }} --workpath build/${{ runner.os }} monitornap.py
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: monitornap-${{ runner.os }}
+        path: |
+          dist/${{ runner.os }}/*
+          dist/windows/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create release
+      id: create_release
+      uses: actions/create-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        release_name: Release ${{ github.ref_name }}
+        body: ${{ github.event.head_commit.message }}
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Upload release assets
+      # Use a bash loop + curl to upload every file under artifacts/ to the created release
+      run: |
+        set -euo pipefail
+
+        # Get upload URL from the create-release output and strip the templated part
+        upload_url='${{ steps.create_release.outputs.upload_url }}'
+        upload_url="${upload_url%%\{*}"
+
+        echo "Uploading assets to: $upload_url"
+
+        # Find files and upload them
+        shopt -s globstar || true
+        for f in artifacts/**; do
+          if [ -f "$f" ]; then
+            name=$(basename "$f")
+            # Try to detect MIME type; fall back to octet-stream
+            if command -v file >/dev/null 2>&1; then
+              content_type=$(file --mime-type -b "$f" || echo "application/octet-stream")
+            else
+              content_type="application/octet-stream"
+            fi
+
+            echo "Uploading $f as $name ($content_type)"
+            curl -sSL -X POST \
+              -H "Authorization: token $GITHUB_TOKEN" \
+              -H "Content-Type: $content_type" \
+              --data-binary @"$f" "$upload_url?name=$(printf '%s' "$name" | jq -s -R -r @uri)"
+          fi
+        done
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
