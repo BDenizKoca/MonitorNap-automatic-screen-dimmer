@@ -22,7 +22,7 @@ from PyQt6.QtCore import Qt, QTimer, QAbstractNativeEventFilter
 from PyQt6.QtGui import QIcon, QColor
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout,
-    QLabel, QPushButton, QFileDialog, QScrollArea, QGroupBox, QColorDialog
+    QLabel, QPushButton, QFileDialog, QGroupBox, QColorDialog
 )
 
 # Platform-specific imports
@@ -144,17 +144,11 @@ class MainWindow(QMainWindow):
         self._init_ui()
 
     def _init_ui(self):
-        """Initialize the user interface with scrollable content."""
-        # Main container with scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.setCentralWidget(scroll)
-
-        # Content widget inside scroll area
-        content_widget = QWidget()
-        scroll.setWidget(content_widget)
-        main_layout = QVBoxLayout(content_widget)
+        """Initialize the user interface."""
+        # Main widget
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        main_layout = QVBoxLayout(main_widget)
 
         # Status label
         self.status_label = QLabel("MonitorNap is running")
@@ -181,8 +175,6 @@ class MainWindow(QMainWindow):
 
         # Bottom controls
         self._add_bottom_controls(main_layout)
-
-        main_layout.addStretch()
 
     def _add_global_settings(self, layout: QVBoxLayout):
         """Add global settings section."""
@@ -243,9 +235,22 @@ class MainWindow(QMainWindow):
         layout.addWidget(global_group)
 
     def _add_monitor_settings(self, layout: QVBoxLayout):
-        """Add monitor settings section."""
+        """Add monitor settings section with scrollable content."""
+        from PyQt6.QtWidgets import QScrollArea
+
         monitors_group = QGroupBox("Monitor Settings")
-        monitors_layout = QVBoxLayout(monitors_group)
+        group_layout = QVBoxLayout(monitors_group)
+
+        # Create scroll area for monitors
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setMaximumHeight(300)  # Limit height to ~2-3 monitors visible
+
+        # Container widget for monitor widgets
+        scroll_content = QWidget()
+        monitors_layout = QVBoxLayout(scroll_content)
+        monitors_layout.setContentsMargins(0, 0, 0, 0)
 
         for ctl in self.controllers:
             mon_widget = MonitorSettingsWidget(
@@ -257,6 +262,9 @@ class MainWindow(QMainWindow):
             monitors_layout.addWidget(mon_widget)
             monitors_layout.addSpacing(5)
 
+        monitors_layout.addStretch()
+        scroll.setWidget(scroll_content)
+        group_layout.addWidget(scroll)
         layout.addWidget(monitors_group)
 
     def _add_quick_actions(self, layout: QVBoxLayout):
