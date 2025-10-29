@@ -236,16 +236,16 @@ class MainWindow(QMainWindow):
 
     def _add_monitor_settings(self, layout: QVBoxLayout):
         """Add monitor settings section with scrollable content."""
-        from PyQt6.QtWidgets import QScrollArea
+        from PyQt6.QtWidgets import QScrollArea, QSizePolicy
 
         monitors_group = QGroupBox("Monitor Settings")
         group_layout = QVBoxLayout(monitors_group)
 
-        # Create scroll area for monitors
+        # Create scroll area for monitors that takes available space
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setMaximumHeight(300)  # Limit height to ~2-3 monitors visible
+        scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         # Container widget for monitor widgets
         scroll_content = QWidget()
@@ -265,7 +265,9 @@ class MainWindow(QMainWindow):
         monitors_layout.addStretch()
         scroll.setWidget(scroll_content)
         group_layout.addWidget(scroll)
-        layout.addWidget(monitors_group)
+
+        # Make monitor settings take most of the available vertical space
+        layout.addWidget(monitors_group, stretch=1)
 
     def _add_quick_actions(self, layout: QVBoxLayout):
         """Add quick actions section."""
