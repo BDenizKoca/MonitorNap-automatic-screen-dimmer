@@ -20,36 +20,35 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
-        python-version: '3.8'
+        python-version: '3.11'
 
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install PyQt6 keyboard monitorcontrol Pillow screeninfo pyinstaller
-
-    - name: Install Windows-specific dependencies
-      if: runner.os == 'Windows'
-      run: pip install pywin32
+        pip install -r requirements.txt pyinstaller
 
     - name: Build Windows executable
       if: runner.os == 'Windows'
       run: |
-        pyinstaller --onefile --windowed --icon=myicon.ico --add-data "myicon.ico;." --noupx -n MonitorNap-Windows --distpath dist/windows --workpath build/windows monitornap.py
+        pyinstaller --onefile --windowed --icon=myicon.ico --add-data "myicon.ico;." --noupx -n MonitorNap-Windows --distpath dist --workpath build monitornap.py
 
-    - name: Build non-Windows executable
-      if: runner.os != 'Windows'
+    - name: Build Linux executable
+      if: runner.os == 'Linux'
       run: |
-        pyinstaller --onefile --windowed --add-data "myicon.ico:." --noupx -n MonitorNap-${{ runner.os }} --distpath dist/${{ runner.os }} --workpath build/${{ runner.os }} monitornap.py
+        pyinstaller --onefile --windowed --add-data "myicon.ico:." --noupx -n MonitorNap-Linux --distpath dist --workpath build monitornap.py
+
+    - name: Build macOS executable
+      if: runner.os == 'macOS'
+      run: |
+        pyinstaller --onefile --windowed --add-data "myicon.ico:." --noupx -n MonitorNap-macOS --distpath dist --workpath build monitornap.py
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
         name: monitornap-${{ runner.os }}
-        path: |
-          dist/${{ runner.os }}/*
-          dist/windows/*
+        path: dist/*
 
   release:
     needs: build
@@ -58,52 +57,30 @@ jobs:
       contents: write
 
     steps:
-    - name: Download artifacts
+    - name: Download all artifacts
       uses: actions/download-artifact@v4
       with:
         path: artifacts
 
-    - name: Create release
-      id: create_release
-      uses: actions/create-release@v1
+    - name: Display structure of downloaded files
+      run: ls -R artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
       with:
+        files: artifacts/**/*
         tag_name: ${{ github.ref_name }}
-        release_name: Release ${{ github.ref_name }}
-        body: ${{ github.event.head_commit.message }}
+        name: MonitorNap ${{ github.ref_name }}
+        body: |
+          ## MonitorNap ${{ github.ref_name }}
+
+          Download the appropriate version for your platform:
+          - **Windows**: MonitorNap-Windows.exe
+          - **Linux**: MonitorNap-Linux (make executable with `chmod +x`)
+          - **macOS**: MonitorNap-macOS
+
+          See the [README](https://github.com/${{ github.repository }}) for installation and usage instructions.
         draft: false
         prerelease: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Upload release assets
-      # Use a bash loop + curl to upload every file under artifacts/ to the created release
-      run: |
-        set -euo pipefail
-
-        # Get upload URL from the create-release output and strip the templated part
-        upload_url='${{ steps.create_release.outputs.upload_url }}'
-        upload_url="${upload_url%%\{*}"
-
-        echo "Uploading assets to: $upload_url"
-
-        # Find files and upload them
-        shopt -s globstar || true
-        for f in artifacts/**; do
-          if [ -f "$f" ]; then
-            name=$(basename "$f")
-            # Try to detect MIME type; fall back to octet-stream
-            if command -v file >/dev/null 2>&1; then
-              content_type=$(file --mime-type -b "$f" || echo "application/octet-stream")
-            else
-              content_type="application/octet-stream"
-            fi
-
-            echo "Uploading $f as $name ($content_type)"
-            curl -sSL -X POST \
-              -H "Authorization: token $GITHUB_TOKEN" \
-              -H "Content-Type: $content_type" \
-              --data-binary @"$f" "$upload_url?name=$(printf '%s' "$name" | jq -s -R -r @uri)"
-          fi
-        done
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
