@@ -51,6 +51,13 @@ jobs:
       run: |
         pyinstaller --onefile --windowed --add-data "myicon.ico:." --noupx -n MonitorNap-macOS --distpath dist --workpath build monitornap.py
 
+    - name: Package macOS app as zip
+      if: runner.os == 'macOS'
+      run: |
+        cd dist
+        zip -r MonitorNap-macOS.app.zip MonitorNap-macOS.app
+        rm -rf MonitorNap-macOS.app
+
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
@@ -82,9 +89,9 @@ jobs:
           ## MonitorNap ${{ github.ref_name }}
 
           Download the appropriate version for your platform:
-          - **Windows**: MonitorNap-Windows.exe
-          - **Linux**: MonitorNap-Linux (make executable with `chmod +x`)
-          - **macOS**: MonitorNap-macOS
+          - **Windows**: `MonitorNap-Windows.exe` - Download and run
+          - **Linux**: `MonitorNap-Linux` - Download, make executable with `chmod +x MonitorNap-Linux`, then run
+          - **macOS**: `MonitorNap-macOS.app.zip` - Download, extract, and run the .app
 
           See the [README](https://github.com/${{ github.repository }}) for installation and usage instructions.
         draft: false
