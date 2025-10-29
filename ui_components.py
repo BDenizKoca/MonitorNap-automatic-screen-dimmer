@@ -4,55 +4,52 @@ This module contains UI helper classes and components to keep the main
 application file clean and maintainable.
 """
 
-from typing import List, Dict, Any, Optional, Callable
-from PyQt6.QtCore import Qt, QTimer
+from typing import Dict, Any, Optional, Callable, TYPE_CHECKING
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QGroupBox,
-    QLabel, QCheckBox, QPushButton, QSlider, QSpinBox, QLineEdit
+    QVBoxLayout, QHBoxLayout, QGridLayout, QGroupBox,
+    QLabel, QCheckBox, QPushButton, QSlider, QSpinBox
 )
-from PyQt6.QtGui import QColor
 
 from logging_utils import log_message
+
+if TYPE_CHECKING:
+    from monitor_controller import MonitorController
 
 
 class MonitorSettingsWidget(QGroupBox):
     """Widget for individual monitor settings."""
-    
-    def __init__(self, monitor_index: int, config: Dict[str, Any], 
-                 on_display_changed: Callable, on_hw_toggled: Callable,
-                 on_sw_toggled: Callable, on_hw_slider_changed: Callable,
-                 on_sw_slider_changed: Callable, on_color_picked: Callable):
+
+    def __init__(self, monitor_index: int, config: Dict[str, Any],
+                 controller: "MonitorController",
+                 on_color_picked: Callable):
         super().__init__(f"Monitor {monitor_index + 1}")
         self.monitor_index = monitor_index
         self.config = config
-        self.on_display_changed = on_display_changed
-        self.on_hw_toggled = on_hw_toggled
-        self.on_sw_toggled = on_sw_toggled
-        self.on_hw_slider_changed = on_hw_slider_changed
-        self.on_sw_slider_changed = on_sw_slider_changed
+        self.controller = controller
         self.on_color_picked = on_color_picked
-        
+
         self._setup_ui()
     
     def _setup_ui(self) -> None:
         """Set up the monitor settings UI."""
         grid = QGridLayout(self)
-        
+
         # Display selector and identify button
         row = 0
         import screeninfo
         monitors = screeninfo.get_monitors()
         disp_count = len(monitors)
-        
+
         disp_label = QLabel("Display:")
         self.disp_spin = QSpinBox()
         self.disp_spin.setRange(0, max(0, disp_count - 1))
         self.disp_spin.setValue(int(self.config.get("display_index", 0)))
         self.disp_spin.valueChanged.connect(self._on_display_selected)
-        
+
         identify_btn = QPushButton("Identify")
-        identify_btn.clicked.connect(self._on_identify_clicked)
-        
+        identify_btn.clicked.connect(lambda: self.controller.identify())
+
         grid.addWidget(disp_label, row, 0)
         grid.addWidget(self.disp_spin, row, 1)
         grid.addWidget(identify_btn, row, 2)
@@ -101,38 +98,38 @@ class MonitorSettingsWidget(QGroupBox):
         try:
             new_disp = int(self.disp_spin.value())
             self.config["display_index"] = new_disp
-            self.on_display_changed(self, new_disp)
+            self.controller.set_indices(new_disp, self.controller.ddc_index)
+            self.setTitle(f"Monitor {self.controller.monitor_index + 1}")
         except Exception as e:
             log_message(f"Failed to set display index: {e}")
-    
-    def _on_identify_clicked(self) -> None:
-        """Handle identify button click."""
-        # This will be connected to the controller's identify method
-        pass
-    
+
     def _on_hw_toggled(self, state: bool) -> None:
         """Handle hardware dimming toggle."""
-        self.on_hw_toggled(state, self)
-    
+        if not state:
+            self.controller.disable_hw_dimming()
+        else:
+            self.config["enable_hardware_dimming"] = True
+
     def _on_sw_toggled(self, state: bool) -> None:
         """Handle software dimming toggle."""
-        self.on_sw_toggled(state, self)
-    
+        if not state:
+            self.controller.disable_sw_dimming()
+        else:
+            self.config["enable_software_dimming"] = True
+
     def _on_hw_slider_changed(self, value: int) -> None:
         """Handle hardware dimming slider change."""
         self.config["hardware_dimming_level"] = value
         self.hw_slider_label.setText(f"HW Level: {value}%")
-        self.on_hw_slider_changed(value, self, self.hw_slider_label)
-    
+
     def _on_sw_slider_changed(self, value: int) -> None:
         """Handle software dimming slider change."""
         self.config["software_dimming_level"] = value / 100.0
         self.sw_slider_label.setText(f"SW Level: {value}%")
-        self.on_sw_slider_changed(value, self, self.sw_slider_label)
-    
+
     def _on_color_picked(self) -> None:
         """Handle color picker button click."""
-        self.on_color_picked(self)
+        self.on_color_picked()
 
 
 class GlobalSettingsWidget(QGroupBox):
