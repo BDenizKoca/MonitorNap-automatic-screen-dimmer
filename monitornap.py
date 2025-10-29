@@ -29,7 +29,7 @@ from PyQt6.QtWidgets import (
 if os.name == 'nt':
     import winreg
 
-__version__ = "1.2.0"
+__version__ = "1.2.1"
 
 # Import local modules
 from logging_utils import log_message, LOG_CACHE, set_debug_mode
