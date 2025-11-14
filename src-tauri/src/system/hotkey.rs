@@ -142,7 +142,8 @@ impl HotkeyManager {
 
         // Register with the system
         {
-            let manager = self.manager.lock().unwrap();
+            let manager = self.manager.lock()
+                .expect("Hotkey manager mutex poisoned");
             manager
                 .register(hotkey)
                 .map_err(|e| MonitorNapError::Hotkey(format!("Failed to register hotkey: {}", e)))?;
@@ -151,25 +152,30 @@ impl HotkeyManager {
         info!("Registered global hotkey: {}", hotkey_str);
 
         // Store hotkey and callback
-        *self.current_hotkey.lock().unwrap() = Some(hotkey);
-        *self.callback.lock().unwrap() = Some(Arc::new(callback));
+        *self.current_hotkey.lock()
+            .expect("Hotkey mutex poisoned") = Some(hotkey);
+        *self.callback.lock()
+            .expect("Callback mutex poisoned") = Some(Arc::new(callback));
 
         Ok(())
     }
 
     /// Unregister the current hotkey
     pub fn unregister(&self) -> Result<()> {
-        let mut current = self.current_hotkey.lock().unwrap();
+        let mut current = self.current_hotkey.lock()
+            .expect("Hotkey mutex poisoned");
 
         if let Some(hotkey) = current.take() {
-            let manager = self.manager.lock().unwrap();
+            let manager = self.manager.lock()
+                .expect("Hotkey manager mutex poisoned");
             manager.unregister(hotkey).map_err(|e| {
                 MonitorNapError::Hotkey(format!("Failed to unregister hotkey: {}", e))
             })?;
             info!("Unregistered global hotkey");
         }
 
-        *self.callback.lock().unwrap() = None;
+        *self.callback.lock()
+            .expect("Callback mutex poisoned") = None;
         Ok(())
     }
 
@@ -183,11 +189,13 @@ impl HotkeyManager {
                     debug!("Hotkey event received: {:?}", event);
 
                     // Check if this matches our registered hotkey
-                    let current = self.current_hotkey.lock().unwrap();
+                    let current = self.current_hotkey.lock()
+                        .expect("Hotkey mutex poisoned");
                     if let Some(hotkey) = current.as_ref() {
                         if event.id == hotkey.id() {
                             debug!("Hotkey matched, executing callback");
-                            let callback = self.callback.lock().unwrap();
+                            let callback = self.callback.lock()
+                                .expect("Callback mutex poisoned");
                             if let Some(cb) = callback.as_ref() {
                                 cb();
                             }

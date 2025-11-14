@@ -10,6 +10,12 @@ let logs = JSON.parse(localStorage.getItem('monitornapLogs') || '[]');
 let hasUnsavedChanges = false;
 
 // Utility Functions
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function markUnsaved() {
     hasUnsavedChanges = true;
     document.getElementById('last-saved').textContent = 'Unsaved changes';
@@ -38,9 +44,9 @@ function renderLogs() {
     }
     viewer.innerHTML = logs.map(log => `
         <div class="log-entry">
-            <span class="log-time">${log.time}</span>
-            <span class="log-type">${log.type}</span>
-            <span class="log-message">${log.message}</span>
+            <span class="log-time">${escapeHtml(log.time)}</span>
+            <span class="log-type">${escapeHtml(log.type)}</span>
+            <span class="log-message">${escapeHtml(log.message)}</span>
         </div>
     `).join('');
 }
@@ -120,7 +126,7 @@ function renderMonitors() {
                 <div class="monitor-title-section">
                     <div class="monitor-title">
                         <span class="expand-icon">▼</span>
-                        Monitor ${index + 1} - ${monitor.name || 'Unknown'}
+                        Monitor ${index + 1} - ${escapeHtml(monitor.name || 'Unknown')}
                         <span class="monitor-status-badge">Active</span>
                     </div>
                     <div class="monitor-info">${monitor.width}x${monitor.height} at (${monitor.x}, ${monitor.y})</div>
@@ -383,8 +389,7 @@ function setupEventListeners() {
     });
 
     document.getElementById('export-logs').addEventListener('click', () => {
-        const text = logs.map(l => `${l.time} [${l.type}] ${l.message}`).join('
-');
+        const text = logs.map(l => `${l.time} [${l.type}] ${l.message}`).join('\n');
         const blob = new Blob([text], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -434,7 +439,7 @@ function renderPresetList() {
     }
     list.innerHTML = presets.map((preset, i) => `
         <div class="preset-item" data-index="${i}">
-            <span>${preset.name}</span>
+            <span>${escapeHtml(preset.name)}</span>
             <button class="btn btn-small" onclick="deletePreset(${i})">Delete</button>
         </div>
     `).join('');

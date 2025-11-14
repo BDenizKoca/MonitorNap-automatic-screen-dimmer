@@ -31,13 +31,16 @@ impl DdcController {
         let displays = Display::enumerate();
 
         if self.index < displays.len() {
-            let mut display = displays.into_iter().nth(self.index).unwrap();
+            // Safe: we verified index is within range
+            let mut display = displays.into_iter().nth(self.index)
+                .expect("Display index validated but not found");
 
             // Try to read current brightness
             match display.handle.get_vcp_feature(0x10) {
                 Ok(brightness) => {
                     self.original_brightness = Some(brightness.value());
-                    *self.display.lock().unwrap() = Some(display);
+                    *self.display.lock()
+                        .expect("DDC display mutex poisoned") = Some(display);
                     info!(
                         "Initialized DDC for monitor {}, brightness: {}",
                         self.index,
@@ -66,7 +69,8 @@ impl DdcController {
 
     /// Get current brightness level (0-100)
     pub fn get_brightness(&self) -> Result<u16> {
-        let mut display_lock = self.display.lock().unwrap();
+        let mut display_lock = self.display.lock()
+            .expect("DDC display mutex poisoned");
         if let Some(display) = display_lock.as_mut() {
             match display.handle.get_vcp_feature(0x10) {
                 Ok(brightness) => {
@@ -83,7 +87,8 @@ impl DdcController {
 
     /// Set brightness level (0-100)
     pub fn set_brightness(&self, value: u16) -> Result<()> {
-        let mut display_lock = self.display.lock().unwrap();
+        let mut display_lock = self.display.lock()
+            .expect("DDC display mutex poisoned");
         if let Some(display) = display_lock.as_mut() {
             let clamped = value.min(100);
             match display.handle.set_vcp_feature(0x10, clamped) {
@@ -137,7 +142,9 @@ impl DdcController {
     /// Check if DDC is supported and initialized
     #[allow(dead_code)]
     pub fn is_available(&self) -> bool {
-        self.display.lock().unwrap().is_some()
+        self.display.lock()
+            .expect("DDC display mutex poisoned")
+            .is_some()
     }
 }
 

@@ -3,6 +3,21 @@ use crate::error::{MonitorNapError, Result};
 use tauri::{AppHandle, LogicalPosition, LogicalSize, Manager, WebviewUrl, WebviewWindowBuilder};
 use tracing::{debug, error, info};
 
+/// Sanitize color string to prevent JavaScript injection
+fn sanitize_color(color: &str) -> Result<String> {
+    // Only allow hex colors (#RGB, #RRGGBB, #RRGGBBAA)
+    if color.starts_with('#')
+        && (color.len() == 4 || color.len() == 7 || color.len() == 9)
+        && color[1..].chars().all(|c| c.is_ascii_hexdigit())
+    {
+        return Ok(color.to_string());
+    }
+    Err(MonitorNapError::Window(format!(
+        "Invalid color format: {}. Must be hex (#RGB or #RRGGBB)",
+        color
+    )))
+}
+
 /// Overlay window for software dimming
 pub struct OverlayWindow {
     label: String,
@@ -40,6 +55,9 @@ impl OverlayWindow {
 
     /// Initialize the overlay window
     pub fn init(&self) -> Result<()> {
+        // Sanitize color to prevent injection
+        let safe_color = sanitize_color(&self.color)?;
+
         // Create a simple data URL for the overlay content
         let html_content = format!(
             r#"<!DOCTYPE html>
@@ -60,16 +78,19 @@ impl OverlayWindow {
 </head>
 <body></body>
 </html>"#,
-            self.color
+            safe_color
         );
 
         let data_url = format!("data:text/html,{}", urlencoding::encode(&html_content));
 
         // Create the overlay window
+        let parsed_url = data_url.parse()
+            .map_err(|e| MonitorNapError::Window(format!("Invalid data URL: {}", e)))?;
+
         match WebviewWindowBuilder::new(
             &self.app_handle,
             &self.label,
-            WebviewUrl::External(data_url.parse().unwrap()),
+            WebviewUrl::External(parsed_url),
         )
         .title("MonitorNap Overlay")
         .position(self.x as f64, self.y as f64)
@@ -84,11 +105,13 @@ impl OverlayWindow {
         .build()
         {
             Ok(window) => {
-                // Set the HTML content
-                if let Err(e) = window.eval(format!(
-                    "document.body.style.backgroundColor = '{}'",
-                    self.color
-                )) {
+                // Set the HTML content using safe JSON encoding
+                let script = format!(
+                    "document.body.style.backgroundColor = {}",
+                    serde_json::to_string(&safe_color)
+                        .unwrap_or_else(|_| String::from("\"#000000\""))
+                );
+                if let Err(e) = window.eval(script) {
                     error!("Failed to set overlay color: {}", e);
                 }
 
@@ -146,9 +169,10 @@ impl OverlayWindow {
         self.opacity = clamped;
 
         if let Some(window) = self.app_handle.get_webview_window(&self.label) {
-            // Control opacity via JavaScript/CSS
+            // Control opacity via JavaScript/CSS - using JSON encoding for safety
+            let script = format!("document.body.style.opacity = {}", clamped);
             window
-                .eval(format!("document.body.style.opacity = '{}'", clamped))
+                .eval(script)
                 .map_err(|e| {
                     MonitorNapError::Window(format!("Failed to set overlay opacity: {}", e))
                 })?;
@@ -212,16 +236,21 @@ impl OverlayWindow {
 
     /// Set overlay color
     pub fn set_color(&mut self, color: String) -> Result<()> {
-        self.color = color.clone();
+        // Sanitize color to prevent JavaScript injection
+        let safe_color = sanitize_color(&color)?;
+        self.color = safe_color.clone();
 
         if let Some(window) = self.app_handle.get_webview_window(&self.label) {
+            // Use JSON encoding for safety
+            let script = format!(
+                "document.body.style.backgroundColor = {}",
+                serde_json::to_string(&safe_color)
+                    .unwrap_or_else(|_| String::from("\"#000000\""))
+            );
             window
-                .eval(format!(
-                    "document.body.style.backgroundColor = '{}'",
-                    color
-                ))
+                .eval(script)
                 .map_err(|e| MonitorNapError::Window(format!("Failed to set color: {}", e)))?;
-            debug!("Set overlay {} color to {}", self.label, color);
+            debug!("Set overlay {} color to {}", self.label, safe_color);
             Ok(())
         } else {
             Err(MonitorNapError::Window(format!(
