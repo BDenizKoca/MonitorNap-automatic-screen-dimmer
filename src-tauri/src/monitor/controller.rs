@@ -60,6 +60,15 @@ impl MonitorController {
 
     /// Initialize DDC and overlay
     fn init(&mut self) -> Result<()> {
+        info!(
+            "Initializing monitor {} ({}x{} at {}, {})",
+            self.config.monitor_index,
+            self.info.width,
+            self.info.height,
+            self.info.x,
+            self.info.y
+        );
+
         // Initialize DDC/CI if hardware dimming is enabled
         if self.config.enable_hardware_dimming {
             let mut ddc = DdcController::new(self.config.ddc_index);

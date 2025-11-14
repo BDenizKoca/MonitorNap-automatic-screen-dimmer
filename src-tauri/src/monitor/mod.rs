@@ -44,19 +44,32 @@ pub struct MonitorInfo {
 pub fn get_monitors() -> Vec<MonitorInfo> {
     match display_info::DisplayInfo::all() {
         Ok(displays) => {
-            displays
+            let monitors: Vec<MonitorInfo> = displays
                 .into_iter()
                 .enumerate()
-                .map(|(i, display)| MonitorInfo {
-                    index: i,
-                    name: format!("Display {}", i + 1),
-                    x: display.x,
-                    y: display.y,
-                    width: display.width,
-                    height: display.height,
-                    is_primary: display.is_primary,
+                .map(|(i, disp)| {
+                    tracing::debug!(
+                        "Detected monitor {}: {}x{} at ({}, {}), primary: {}",
+                        i,
+                        disp.width,
+                        disp.height,
+                        disp.x,
+                        disp.y,
+                        disp.is_primary
+                    );
+                    MonitorInfo {
+                        index: i,
+                        name: format!("Display {}", i + 1),
+                        x: disp.x,
+                        y: disp.y,
+                        width: disp.width,
+                        height: disp.height,
+                        is_primary: disp.is_primary,
+                    }
                 })
-                .collect()
+                .collect();
+            tracing::info!("Detected {} monitor(s)", monitors.len());
+            monitors
         }
         Err(e) => {
             tracing::error!("Failed to get display info: {}", e);

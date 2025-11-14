@@ -44,9 +44,13 @@ impl AppState {
         let monitor_infos = get_monitors();
         let mut monitors = Vec::new();
 
-        // Auto-detect monitors if config is empty
-        let monitor_configs = if config.monitors.is_empty() {
-            monitor_infos
+        // Auto-detect monitors if config is empty or mismatched
+        let mut config_manager = config_manager;
+        let needs_auto_detect = config.monitors.is_empty() || config.monitors.len() != monitor_infos.len();
+
+        let monitor_configs = if needs_auto_detect {
+            info!("Auto-detecting {} monitors", monitor_infos.len());
+            let auto_configs: Vec<MonitorConfig> = monitor_infos
                 .iter()
                 .enumerate()
                 .map(|(i, _)| MonitorConfig {
@@ -55,7 +59,17 @@ impl AppState {
                     ddc_index: i,
                     ..Default::default()
                 })
-                .collect::<Vec<_>>()
+                .collect();
+
+            // Save auto-detected configs
+            config_manager.get_mut().monitors = auto_configs.clone();
+            if let Err(e) = config_manager.save() {
+                warn!("Failed to save auto-detected monitor configs: {}", e);
+            } else {
+                info!("Saved auto-detected monitor configurations");
+            }
+
+            auto_configs
         } else {
             config.monitors.clone()
         };
