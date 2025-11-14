@@ -4,8 +4,7 @@ use global_hotkey::{
     hotkey::{Code, HotKey, Modifiers},
     GlobalHotKeyEvent, GlobalHotKeyManager,
 };
-use std::sync::Arc;
-use tokio::sync::Mutex;
+use std::sync::{Arc, Mutex};
 use tracing::{debug, info};
 
 /// Callback type for hotkey events
@@ -17,6 +16,12 @@ pub struct HotkeyManager {
     current_hotkey: Arc<Mutex<Option<HotKey>>>,
     callback: Arc<Mutex<Option<HotkeyCallback>>>,
 }
+
+// SAFETY: HotkeyManager only accesses GlobalHotKeyManager through a Mutex.
+// The GlobalHotKeyManager contains platform-specific handles but we ensure
+// thread-safety through synchronization and only use it from the main thread context.
+unsafe impl Send for HotkeyManager {}
+unsafe impl Sync for HotkeyManager {}
 
 impl HotkeyManager {
     /// Create a new hotkey manager
@@ -125,44 +130,46 @@ impl HotkeyManager {
     }
 
     /// Register a hotkey with a callback
-    pub async fn register<F>(&self, hotkey_str: &str, callback: F) -> Result<()>
+    pub fn register<F>(&self, hotkey_str: &str, callback: F) -> Result<()>
     where
         F: Fn() + Send + Sync + 'static,
     {
         // Unregister existing hotkey
-        self.unregister().await?;
+        self.unregister()?;
 
         // Parse and create new hotkey
         let hotkey = Self::parse_hotkey(hotkey_str)?;
 
         // Register with the system
-        let manager = self.manager.lock().await;
-        manager
-            .register(hotkey)
-            .map_err(|e| MonitorNapError::Hotkey(format!("Failed to register hotkey: {}", e)))?;
+        {
+            let manager = self.manager.lock().unwrap();
+            manager
+                .register(hotkey)
+                .map_err(|e| MonitorNapError::Hotkey(format!("Failed to register hotkey: {}", e)))?;
+        }
 
         info!("Registered global hotkey: {}", hotkey_str);
 
         // Store hotkey and callback
-        *self.current_hotkey.lock().await = Some(hotkey);
-        *self.callback.lock().await = Some(Arc::new(callback));
+        *self.current_hotkey.lock().unwrap() = Some(hotkey);
+        *self.callback.lock().unwrap() = Some(Arc::new(callback));
 
         Ok(())
     }
 
     /// Unregister the current hotkey
-    pub async fn unregister(&self) -> Result<()> {
-        let mut current = self.current_hotkey.lock().await;
+    pub fn unregister(&self) -> Result<()> {
+        let mut current = self.current_hotkey.lock().unwrap();
 
         if let Some(hotkey) = current.take() {
-            let manager = self.manager.lock().await;
+            let manager = self.manager.lock().unwrap();
             manager.unregister(hotkey).map_err(|e| {
                 MonitorNapError::Hotkey(format!("Failed to unregister hotkey: {}", e))
             })?;
             info!("Unregistered global hotkey");
         }
 
-        *self.callback.lock().await = None;
+        *self.callback.lock().unwrap() = None;
         Ok(())
     }
 
@@ -176,11 +183,11 @@ impl HotkeyManager {
                     debug!("Hotkey event received: {:?}", event);
 
                     // Check if this matches our registered hotkey
-                    let current = self.current_hotkey.lock().await;
+                    let current = self.current_hotkey.lock().unwrap();
                     if let Some(hotkey) = current.as_ref() {
                         if event.id == hotkey.id() {
                             debug!("Hotkey matched, executing callback");
-                            let callback = self.callback.lock().await;
+                            let callback = self.callback.lock().unwrap();
                             if let Some(cb) = callback.as_ref() {
                                 cb();
                             }

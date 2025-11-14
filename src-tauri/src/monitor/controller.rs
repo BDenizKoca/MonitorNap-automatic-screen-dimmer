@@ -32,6 +32,11 @@ pub struct MonitorController {
     app_handle: AppHandle,
 }
 
+// SAFETY: MonitorController is designed to be used in a multi-threaded async context.
+// All shared state is protected by appropriate synchronization primitives.
+unsafe impl Send for MonitorController {}
+unsafe impl Sync for MonitorController {}
+
 impl MonitorController {
     /// Create a new monitor controller
     pub fn new(

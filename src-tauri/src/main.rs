@@ -332,8 +332,7 @@ async fn register_hotkey(
         .hotkey_manager
         .register(&hotkey, move || {
             let _ = app_handle_clone.emit("toggle-awake-mode", ());
-        })
-        .await?;
+        })?;
 
     // Update config
     let mut config_manager = state_lock.config_manager.lock().await;
@@ -403,7 +402,6 @@ pub fn run() {
                     .register(&hotkey_str, move || {
                         let _ = app_handle_inner.emit("toggle-awake-mode", ());
                     })
-                    .await
                 {
                     warn!("Failed to register default hotkey: {}", e);
                 }

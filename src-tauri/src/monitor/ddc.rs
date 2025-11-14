@@ -11,6 +11,11 @@ pub struct DdcController {
     index: usize,
 }
 
+// SAFETY: DdcController only accesses Display through a Mutex, ensuring exclusive access.
+// The Display type contains raw pointers but we ensure thread-safety through synchronization.
+unsafe impl Send for DdcController {}
+unsafe impl Sync for DdcController {}
+
 impl DdcController {
     /// Create a new DDC controller for the specified monitor index
     pub fn new(index: usize) -> Self {

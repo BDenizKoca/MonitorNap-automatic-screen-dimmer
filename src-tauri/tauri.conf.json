@@ -70,9 +70,6 @@
   "plugins": {
     "shell": {
       "open": true
-    },
-    "autostart": {
-      "enabled": true
     }
   }
 }
