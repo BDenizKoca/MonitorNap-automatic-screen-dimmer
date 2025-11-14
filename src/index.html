@@ -9,16 +9,25 @@
 <body>
     <div class="container">
         <header>
-            <h1>MonitorNap</h1>
-            <p class="subtitle">Automatic monitor dimming utility</p>
-            <div id="status" class="status">MonitorNap is running</div>
+            <div class="header-content">
+                <div>
+                    <h1>MonitorNap</h1>
+                    <p class="subtitle">Automatic monitor dimming utility</p>
+                </div>
+                <div id="status" class="status">
+                    <span class="status-dot"></span>
+                    <span id="status-text">MonitorNap is running</span>
+                </div>
+            </div>
         </header>
 
         <section class="settings-section">
             <h2>Global Settings</h2>
             <div class="settings-grid">
                 <div class="setting-item">
-                    <label for="inactivity">Inactivity timeout (seconds)</label>
+                    <label for="inactivity" title="Time of inactivity before dimming monitors">
+                        Inactivity timeout (seconds)
+                    </label>
                     <div class="input-group">
                         <input type="range" id="inactivity" min="1" max="600" value="10">
                         <input type="number" id="inactivity-num" min="1" max="600" value="10">
@@ -26,14 +35,16 @@
                 </div>
 
                 <div class="setting-item">
-                    <label>
+                    <label title="Prevent all dimming when enabled">
                         <input type="checkbox" id="awake-mode">
                         Awake mode (prevent dimming)
                     </label>
                 </div>
 
                 <div class="setting-item">
-                    <label for="hotkey">Global hotkey</label>
+                    <label for="hotkey" title="Global keyboard shortcut to toggle awake mode">
+                        Global hotkey
+                    </label>
                     <div class="input-group">
                         <input type="text" id="hotkey" placeholder="Ctrl+Alt+A" readonly>
                         <button id="set-hotkey" class="btn btn-secondary">Set</button>
@@ -41,14 +52,14 @@
                 </div>
 
                 <div class="setting-item">
-                    <label>
+                    <label title="Launch MonitorNap when system starts">
                         <input type="checkbox" id="start-on-startup">
                         Start on system startup
                     </label>
                 </div>
 
                 <div class="setting-item">
-                    <label>
+                    <label title="Start hidden in system tray">
                         <input type="checkbox" id="start-minimized">
                         Start minimized to tray
                     </label>
@@ -57,9 +68,20 @@
         </section>
 
         <section class="monitors-section">
-            <h2>Monitor Settings</h2>
-            <div id="monitors-container" class="monitors-scrollable">
-                <!-- Monitor settings will be dynamically inserted here -->
+            <div class="section-header">
+                <h2>Monitor Settings</h2>
+                <div class="section-actions">
+                    <button id="collapse-all" class="btn btn-small">Collapse All</button>
+                    <button id="expand-all" class="btn btn-small">Expand All</button>
+                    <button id="save-preset" class="btn btn-small btn-secondary">Save Preset</button>
+                    <button id="load-preset" class="btn btn-small btn-secondary">Load Preset</button>
+                </div>
+            </div>
+            <div id="monitors-container" class="monitors-grid">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>Loading monitors...</p>
+                </div>
             </div>
         </section>
 
@@ -77,13 +99,62 @@
             </div>
         </section>
 
+        <section class="logs-section collapsed">
+            <div class="section-header clickable" id="toggle-logs">
+                <h2>Activity Logs</h2>
+                <span class="expand-icon">▼</span>
+            </div>
+            <div class="logs-content">
+                <div class="logs-controls">
+                    <button id="clear-logs" class="btn btn-small">Clear Logs</button>
+                    <button id="export-logs" class="btn btn-small">Export</button>
+                </div>
+                <div id="logs-viewer" class="logs-viewer">
+                    <p class="empty-state">No activity logs yet</p>
+                </div>
+            </div>
+        </section>
+
         <footer>
-            <button id="apply-settings" class="btn btn-success">Apply Settings</button>
-            <button id="minimize" class="btn">Minimize to Tray</button>
+            <button id="apply-settings" class="btn btn-success" title="Apply and save all settings (Ctrl+S)">
+                Apply Settings
+            </button>
+            <button id="minimize" class="btn" title="Minimize to system tray (ESC)">
+                Minimize to Tray
+            </button>
+            <div class="footer-info">
+                <span id="last-saved">Unsaved changes</span>
+            </div>
         </footer>
     </div>
 
     <div id="notification" class="notification hidden"></div>
+
+    <!-- Confirmation Dialog -->
+    <div id="confirm-dialog" class="dialog-overlay hidden">
+        <div class="dialog">
+            <h3 id="dialog-title">Confirm Action</h3>
+            <p id="dialog-message">Are you sure?</p>
+            <div class="dialog-actions">
+                <button id="dialog-cancel" class="btn">Cancel</button>
+                <button id="dialog-confirm" class="btn btn-primary">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preset Dialog -->
+    <div id="preset-dialog" class="dialog-overlay hidden">
+        <div class="dialog">
+            <h3 id="preset-title">Save Preset</h3>
+            <label for="preset-name">Preset Name:</label>
+            <input type="text" id="preset-name" placeholder="My Configuration">
+            <div id="preset-list" class="preset-list"></div>
+            <div class="dialog-actions">
+                <button id="preset-cancel" class="btn">Cancel</button>
+                <button id="preset-save" class="btn btn-primary">Save</button>
+            </div>
+        </div>
+    </div>
 
     <script type="module" src="main.js"></script>
 </body>
