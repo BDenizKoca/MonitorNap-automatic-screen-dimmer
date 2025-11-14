@@ -287,19 +287,87 @@ function setupEventListeners() {
         }
     });
 
-    // Hotkey
+    // Hotkey recording
+    let isRecordingHotkey = false;
+    let recordedKeys = new Set();
+
+    document.getElementById('record-hotkey').addEventListener('click', () => {
+        if (isRecordingHotkey) return;
+
+        isRecordingHotkey = true;
+        recordedKeys.clear();
+        const btn = document.getElementById('record-hotkey');
+        const input = document.getElementById('hotkey');
+
+        btn.textContent = 'Press keys...';
+        btn.classList.add('btn-primary');
+        input.value = 'Press any key combination...';
+
+        const handleKeyDown = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Build the hotkey string
+            const modifiers = [];
+            if (e.ctrlKey) modifiers.push('Ctrl');
+            if (e.altKey) modifiers.push('Alt');
+            if (e.shiftKey) modifiers.push('Shift');
+            if (e.metaKey) modifiers.push('Super');
+
+            // Get the key (not a modifier)
+            let key = e.key;
+            if (!['Control', 'Alt', 'Shift', 'Meta'].includes(key)) {
+                // Format the key properly
+                if (key.length === 1) {
+                    key = key.toUpperCase();
+                }
+
+                // Build final hotkey string
+                const parts = [...modifiers, key];
+                const hotkeyString = parts.join('+');
+
+                input.value = hotkeyString;
+
+                // Stop recording
+                document.removeEventListener('keydown', handleKeyDown, true);
+                btn.textContent = 'Record';
+                btn.classList.remove('btn-primary');
+                isRecordingHotkey = false;
+
+                showNotification('Hotkey recorded: ' + hotkeyString, 'success');
+                addLog('INFO', `Recorded hotkey: ${hotkeyString}`);
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown, true);
+
+        // Timeout after 10 seconds
+        setTimeout(() => {
+            if (isRecordingHotkey) {
+                document.removeEventListener('keydown', handleKeyDown, true);
+                btn.textContent = 'Record';
+                btn.classList.remove('btn-primary');
+                input.value = config.awake_mode_shortcut;
+                isRecordingHotkey = false;
+                showNotification('Recording timeout', 'error');
+            }
+        }, 10000);
+    });
+
     document.getElementById('set-hotkey').addEventListener('click', async () => {
-        const newHotkey = prompt('Enter hotkey (e.g., Ctrl+Alt+A):', config.awake_mode_shortcut);
-        if (newHotkey && newHotkey.trim()) {
+        const newHotkey = document.getElementById('hotkey').value.trim();
+        if (newHotkey && newHotkey !== 'Press any key combination...') {
             try {
-                await invoke('register_hotkey', { hotkey: newHotkey.trim() });
-                config.awake_mode_shortcut = newHotkey.trim();
-                document.getElementById('hotkey').value = newHotkey.trim();
+                await invoke('register_hotkey', { hotkey: newHotkey });
+                config.awake_mode_shortcut = newHotkey;
                 showNotification('Hotkey registered', 'success');
-                addLog('INFO', `Hotkey changed to ${newHotkey.trim()}`);
+                addLog('INFO', `Hotkey set to ${newHotkey}`);
             } catch (error) {
                 showNotification('Failed to register hotkey: ' + error, 'error');
+                addLog('ERROR', `Failed to register hotkey: ${error}`);
             }
+        } else {
+            showNotification('Please record a hotkey first', 'error');
         }
     });
 
