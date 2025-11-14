@@ -6,7 +6,7 @@ use global_hotkey::{
 };
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tracing::{debug, error, info, warn};
+use tracing::{debug, info};
 
 /// Callback type for hotkey events
 pub type HotkeyCallback = Arc<dyn Fn() + Send + Sync>;

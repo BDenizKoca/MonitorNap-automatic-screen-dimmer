@@ -13,7 +13,7 @@ use system::{ActivityMonitor, HotkeyManager, TrayManager};
 
 use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 use tracing_subscriber;
@@ -423,14 +423,12 @@ pub fn run() {
 
             // Handle window close - minimize to tray instead
             if let Some(window) = app.get_webview_window("main") {
-                window.on_window_event(|event| {
+                let window_clone = window.clone();
+                window.on_window_event(move |event| {
                     if let tauri::WindowEvent::CloseRequested { api, .. } = event {
                         // Prevent window from closing, hide it instead
                         api.prevent_close();
-                        if let Some(window) = event.window().app_handle().get_webview_window("main")
-                        {
-                            let _ = window.hide();
-                        }
+                        let _ = window_clone.hide();
                     }
                 });
 

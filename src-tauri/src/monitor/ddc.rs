@@ -23,45 +23,39 @@ impl DdcController {
 
     /// Initialize DDC connection to the monitor
     pub fn init(&mut self) -> Result<()> {
-        match Display::enumerate() {
-            Ok(displays) => {
-                if self.index < displays.len() {
-                    let mut display = displays.into_iter().nth(self.index).unwrap();
+        let displays = Display::enumerate();
 
-                    // Try to read current brightness
-                    match display.handle.get_vcp_feature(0x10) {
-                        Ok(brightness) => {
-                            self.original_brightness = Some(brightness.value());
-                            *self.display.lock().unwrap() = Some(display);
-                            info!(
-                                "Initialized DDC for monitor {}, brightness: {}",
-                                self.index,
-                                brightness.value()
-                            );
-                            Ok(())
-                        }
-                        Err(e) => {
-                            warn!(
-                                "Monitor {} does not support DDC/CI brightness control: {}",
-                                self.index, e
-                            );
-                            Err(MonitorNapError::Ddc(format!(
-                                "DDC not supported on monitor {}: {}",
-                                self.index, e
-                            )))
-                        }
-                    }
-                } else {
+        if self.index < displays.len() {
+            let mut display = displays.into_iter().nth(self.index).unwrap();
+
+            // Try to read current brightness
+            match display.handle.get_vcp_feature(0x10) {
+                Ok(brightness) => {
+                    self.original_brightness = Some(brightness.value());
+                    *self.display.lock().unwrap() = Some(display);
+                    info!(
+                        "Initialized DDC for monitor {}, brightness: {}",
+                        self.index,
+                        brightness.value()
+                    );
+                    Ok(())
+                }
+                Err(e) => {
+                    warn!(
+                        "Monitor {} does not support DDC/CI brightness control: {}",
+                        self.index, e
+                    );
                     Err(MonitorNapError::Ddc(format!(
-                        "Monitor index {} out of range",
-                        self.index
+                        "DDC not supported on monitor {}: {}",
+                        self.index, e
                     )))
                 }
             }
-            Err(e) => {
-                error!("Failed to enumerate DDC displays: {}", e);
-                Err(MonitorNapError::Ddc(format!("Failed to enumerate displays: {}", e)))
-            }
+        } else {
+            Err(MonitorNapError::Ddc(format!(
+                "Monitor index {} out of range",
+                self.index
+            )))
         }
     }
 

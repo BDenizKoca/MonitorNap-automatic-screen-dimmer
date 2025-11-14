@@ -40,37 +40,36 @@ impl OverlayWindow {
 
     /// Initialize the overlay window
     pub fn init(&self) -> Result<()> {
-        let overlay_html = format!(
-            r#"
-<!DOCTYPE html>
+        // Create a simple data URL for the overlay content
+        let html_content = format!(
+            r#"<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <style>
-        * {{
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }}
+        * {{ margin: 0; padding: 0; overflow: hidden; }}
         body {{
             background-color: {};
             width: 100vw;
             height: 100vh;
             pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
         }}
     </style>
 </head>
 <body></body>
-</html>
-"#,
+</html>"#,
             self.color
         );
+
+        let data_url = format!("data:text/html,{}", urlencoding::encode(&html_content));
 
         // Create the overlay window
         match WebviewWindowBuilder::new(
             &self.app_handle,
             &self.label,
-            WebviewUrl::App("overlay.html".into()),
+            WebviewUrl::External(data_url.parse().unwrap()),
         )
         .title("MonitorNap Overlay")
         .position(self.x as f64, self.y as f64)
@@ -147,19 +146,12 @@ impl OverlayWindow {
         self.opacity = clamped;
 
         if let Some(window) = self.app_handle.get_webview_window(&self.label) {
-            // On some platforms, we need to use alpha on the window
-            if let Err(e) = window.set_opacity(clamped as f64) {
-                debug!("Failed to set window opacity: {}, trying body opacity", e);
-                // Fallback: adjust body opacity via JavaScript
-                if let Err(e) = window.eval(&format!("document.body.style.opacity = '{}'", clamped))
-                {
-                    error!("Failed to set overlay opacity: {}", e);
-                    return Err(MonitorNapError::Window(format!(
-                        "Failed to set opacity: {}",
-                        e
-                    )));
-                }
-            }
+            // Control opacity via JavaScript/CSS
+            window
+                .eval(&format!("document.body.style.opacity = '{}'", clamped))
+                .map_err(|e| {
+                    MonitorNapError::Window(format!("Failed to set overlay opacity: {}", e))
+                })?;
             debug!("Set overlay {} opacity to {}", self.label, clamped);
             Ok(())
         } else {

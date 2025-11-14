@@ -1,5 +1,4 @@
 /// Activity monitoring for user input
-use crate::error::Result;
 use rdev::{listen, Event, EventType};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
