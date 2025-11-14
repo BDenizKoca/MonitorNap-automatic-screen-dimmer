@@ -1,0 +1,81 @@
+{
+  "productName": "MonitorNap",
+  "version": "2.0.0",
+  "identifier": "com.monitornap.app",
+  "build": {
+    "beforeDevCommand": "",
+    "devUrl": "../src",
+    "frontendDist": "../src",
+    "beforeBuildCommand": "",
+    "withGlobalTauri": false
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "certificateThumbprint": null,
+      "digestAlgorithm": "sha256",
+      "timestampUrl": ""
+    },
+    "longDescription": "MonitorNap automatically dims your monitors after a period of inactivity. It works in the background and has a hotkey to keep things awake when needed.",
+    "macOS": {
+      "entitlements": null,
+      "exceptionDomain": "",
+      "frameworks": [],
+      "providerShortName": null,
+      "signingIdentity": null
+    },
+    "resources": [],
+    "shortDescription": "Turn off your displays with a single click",
+    "linux": {
+      "deb": {
+        "depends": []
+      }
+    },
+    "externalBin": [],
+    "copyright": "",
+    "category": "Utility",
+    "fileAssociations": []
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "MonitorNap",
+        "width": 900,
+        "height": 700,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": true,
+        "transparent": false,
+        "visible": false,
+        "focus": true,
+        "alwaysOnTop": false
+      }
+    ],
+    "security": {
+      "csp": null,
+      "devCsp": null,
+      "freezePrototype": true,
+      "dangerousDisableAssetCspModification": false
+    },
+    "trayIcon": {
+      "iconPath": "icons/icon.ico",
+      "iconAsTemplate": false,
+      "menuOnLeftClick": false,
+      "title": "MonitorNap"
+    },
+    "macOSPrivateApi": false,
+    "withGlobalTauri": true
+  },
+  "plugins": {
+    "shell": {
+      "open": true
+    },
+    "autostart": {
+      "enabled": true
+    }
+  }
+}

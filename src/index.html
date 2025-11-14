@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MonitorNap</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌙 MonitorNap</h1>
+            <p class="subtitle">Automatic Monitor Dimming</p>
+            <div id="status" class="status">MonitorNap is running</div>
+        </header>
+
+        <section class="settings-section">
+            <h2>Global Settings</h2>
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label for="inactivity">Inactivity Timeout (seconds)</label>
+                    <div class="input-group">
+                        <input type="range" id="inactivity" min="1" max="600" value="10">
+                        <input type="number" id="inactivity-num" min="1" max="600" value="10">
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="awake-mode">
+                        Awake Mode (Prevent Dimming)
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <label for="hotkey">Global Hotkey</label>
+                    <div class="input-group">
+                        <input type="text" id="hotkey" placeholder="Ctrl+Alt+A" readonly>
+                        <button id="record-hotkey" class="btn btn-secondary">Record</button>
+                    </div>
+                </div>
+
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="start-on-startup">
+                        Start on System Startup
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <label>
+                        <input type="checkbox" id="start-minimized">
+                        Start Minimized to Tray
+                    </label>
+                </div>
+            </div>
+        </section>
+
+        <section class="monitors-section">
+            <h2>Monitor Settings</h2>
+            <div id="monitors-container">
+                <!-- Monitor settings will be dynamically inserted here -->
+            </div>
+        </section>
+
+        <section class="actions-section">
+            <h2>Quick Actions</h2>
+            <div class="actions-grid">
+                <button id="nap-now" class="btn btn-primary">💤 Nap Now</button>
+                <button id="resume-now" class="btn btn-primary">☀️ Resume Now</button>
+                <div class="pause-group">
+                    <span>Pause Dimming:</span>
+                    <button class="btn btn-secondary" data-pause="15">15 min</button>
+                    <button class="btn btn-secondary" data-pause="30">30 min</button>
+                    <button class="btn btn-secondary" data-pause="60">60 min</button>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <button id="save-config" class="btn btn-success">💾 Save Settings</button>
+            <button id="minimize" class="btn btn-secondary">Minimize to Tray</button>
+        </footer>
+    </div>
+
+    <div id="notification" class="notification hidden"></div>
+
+    <script type="module" src="main.js"></script>
+</body>
+</html>
