@@ -31,12 +31,8 @@ pub enum MonitorNapError {
 /// Result type alias for MonitorNap operations
 pub type Result<T> = std::result::Result<T, MonitorNapError>;
 
-/// Convert DDC errors to our error type
-impl From<ddc_hi::Error> for MonitorNapError {
-    fn from(err: ddc_hi::Error) -> Self {
-        MonitorNapError::Ddc(err.to_string())
-    }
-}
+// Note: ddc_hi::Error is private, so we can't impl From for it
+// Use .map_err(|e| MonitorNapError::Ddc(e.to_string())) instead
 
 /// Convert global-hotkey errors to our error type
 impl From<global_hotkey::Error> for MonitorNapError {

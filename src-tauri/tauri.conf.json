@@ -4,10 +4,8 @@
   "identifier": "com.monitornap.app",
   "build": {
     "beforeDevCommand": "",
-    "devUrl": "../src",
     "frontendDist": "../src",
-    "beforeBuildCommand": "",
-    "withGlobalTauri": false
+    "beforeBuildCommand": ""
   },
   "bundle": {
     "active": true,
@@ -67,8 +65,7 @@
       "menuOnLeftClick": false,
       "title": "MonitorNap"
     },
-    "macOSPrivateApi": false,
-    "withGlobalTauri": true
+    "macOSPrivateApi": false
   },
   "plugins": {
     "shell": {

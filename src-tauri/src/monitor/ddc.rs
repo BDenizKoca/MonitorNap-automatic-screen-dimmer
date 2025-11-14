@@ -67,8 +67,8 @@ impl DdcController {
 
     /// Get current brightness level (0-100)
     pub fn get_brightness(&self) -> Result<u16> {
-        let display_lock = self.display.lock().unwrap();
-        if let Some(display) = display_lock.as_ref() {
+        let mut display_lock = self.display.lock().unwrap();
+        if let Some(display) = display_lock.as_mut() {
             match display.handle.get_vcp_feature(0x10) {
                 Ok(brightness) => {
                     let value = brightness.value();
@@ -84,8 +84,8 @@ impl DdcController {
 
     /// Set brightness level (0-100)
     pub fn set_brightness(&self, value: u16) -> Result<()> {
-        let display_lock = self.display.lock().unwrap();
-        if let Some(display) = display_lock.as_ref() {
+        let mut display_lock = self.display.lock().unwrap();
+        if let Some(display) = display_lock.as_mut() {
             let clamped = value.min(100);
             match display.handle.set_vcp_feature(0x10, clamped) {
                 Ok(_) => {
