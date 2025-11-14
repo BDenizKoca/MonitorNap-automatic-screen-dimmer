@@ -10,7 +10,7 @@
     <div class="container">
         <header>
             <h1>MonitorNap</h1>
-            <p class="subtitle">Automatic Monitor Dimming - Tauri/Rust Edition</p>
+            <p class="subtitle">Automatic monitor dimming utility</p>
             <div id="status" class="status">MonitorNap is running</div>
         </header>
 
@@ -18,7 +18,7 @@
             <h2>Global Settings</h2>
             <div class="settings-grid">
                 <div class="setting-item">
-                    <label for="inactivity">Inactivity Timeout (seconds)</label>
+                    <label for="inactivity">Inactivity timeout (seconds)</label>
                     <div class="input-group">
                         <input type="range" id="inactivity" min="1" max="600" value="10">
                         <input type="number" id="inactivity-num" min="1" max="600" value="10">
@@ -28,12 +28,12 @@
                 <div class="setting-item">
                     <label>
                         <input type="checkbox" id="awake-mode">
-                        Awake Mode (Prevent Dimming)
+                        Awake mode (prevent dimming)
                     </label>
                 </div>
 
                 <div class="setting-item">
-                    <label for="hotkey">Global Hotkey</label>
+                    <label for="hotkey">Global hotkey</label>
                     <div class="input-group">
                         <input type="text" id="hotkey" placeholder="Ctrl+Alt+A" readonly>
                         <button id="set-hotkey" class="btn btn-secondary">Set</button>
@@ -43,14 +43,14 @@
                 <div class="setting-item">
                     <label>
                         <input type="checkbox" id="start-on-startup">
-                        Start on System Startup
+                        Start on system startup
                     </label>
                 </div>
 
                 <div class="setting-item">
                     <label>
                         <input type="checkbox" id="start-minimized">
-                        Start Minimized to Tray
+                        Start minimized to tray
                     </label>
                 </div>
             </div>
@@ -69,7 +69,7 @@
                 <button id="nap-now" class="btn btn-primary">Nap Now</button>
                 <button id="resume-now" class="btn btn-primary">Resume Now</button>
                 <div class="pause-group">
-                    <span>Pause Dimming:</span>
+                    <span>Pause dimming:</span>
                     <button class="btn btn-secondary" data-pause="15">15 min</button>
                     <button class="btn btn-secondary" data-pause="30">30 min</button>
                     <button class="btn btn-secondary" data-pause="60">60 min</button>
@@ -79,7 +79,7 @@
 
         <footer>
             <button id="apply-settings" class="btn btn-success">Apply Settings</button>
-            <button id="minimize" class="btn btn-secondary">Minimize to Tray</button>
+            <button id="minimize" class="btn">Minimize to Tray</button>
         </footer>
     </div>
 

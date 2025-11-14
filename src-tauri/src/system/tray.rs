@@ -180,6 +180,7 @@ impl TrayManager {
     }
 
     /// Update tray tooltip
+    #[allow(dead_code)]
     pub fn update_tooltip(&self, text: &str) {
         if let Some(tray) = self.app_handle.tray_by_id("main") {
             if let Err(e) = tray.set_tooltip(Some(text)) {

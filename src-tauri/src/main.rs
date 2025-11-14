@@ -16,7 +16,6 @@ use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
-use tracing_subscriber;
 
 /// Application state
 pub struct AppState {
@@ -465,7 +464,7 @@ async fn update_monitor_sw_level(
     let mut config_manager = state_lock.config_manager.lock().await;
 
     if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
-        cfg.software_dimming_level = level.max(0.0).min(1.0);
+        cfg.software_dimming_level = level.clamp(0.0, 1.0);
         config_manager.save()?;
     }
 

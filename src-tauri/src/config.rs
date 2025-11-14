@@ -218,7 +218,7 @@ mod tests {
     fn test_default_config() {
         let config = AppConfig::default();
         assert_eq!(config.inactivity_limit, 10);
-        assert_eq!(config.awake_mode, false);
+        assert!(!config.awake_mode);
         assert_eq!(config.awake_mode_shortcut, "Ctrl+Alt+A");
     }
 

@@ -85,7 +85,7 @@ impl OverlayWindow {
         {
             Ok(window) => {
                 // Set the HTML content
-                if let Err(e) = window.eval(&format!(
+                if let Err(e) = window.eval(format!(
                     "document.body.style.backgroundColor = '{}'",
                     self.color
                 )) {
@@ -148,7 +148,7 @@ impl OverlayWindow {
         if let Some(window) = self.app_handle.get_webview_window(&self.label) {
             // Control opacity via JavaScript/CSS
             window
-                .eval(&format!("document.body.style.opacity = '{}'", clamped))
+                .eval(format!("document.body.style.opacity = '{}'", clamped))
                 .map_err(|e| {
                     MonitorNapError::Window(format!("Failed to set overlay opacity: {}", e))
                 })?;
@@ -216,7 +216,7 @@ impl OverlayWindow {
 
         if let Some(window) = self.app_handle.get_webview_window(&self.label) {
             window
-                .eval(&format!(
+                .eval(format!(
                     "document.body.style.backgroundColor = '{}'",
                     color
                 ))

@@ -5,7 +5,6 @@
 /// - Software dimming via overlay windows
 /// - Activity detection
 /// - Monitor geometry management
-
 pub mod controller;
 pub mod ddc;
 pub mod overlay;

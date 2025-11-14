@@ -135,13 +135,9 @@ impl DdcController {
     }
 
     /// Check if DDC is supported and initialized
+    #[allow(dead_code)]
     pub fn is_available(&self) -> bool {
         self.display.lock().unwrap().is_some()
-    }
-
-    /// Get the original brightness value
-    pub fn original_brightness(&self) -> Option<u16> {
-        self.original_brightness
     }
 }
 

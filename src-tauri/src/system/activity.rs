@@ -80,6 +80,7 @@ impl ActivityMonitor {
     }
 
     /// Get time since last input activity in seconds
+    #[allow(dead_code)]
     pub async fn get_idle_time(&self) -> u64 {
         self.last_input_time.lock().await.elapsed().as_secs()
     }
@@ -90,11 +91,13 @@ impl ActivityMonitor {
     }
 
     /// Update activity (mark as active now)
+    #[allow(dead_code)]
     pub async fn update_activity(&self) {
         *self.last_input_time.lock().await = Instant::now();
     }
 
     /// Check if monitor is running
+    #[allow(dead_code)]
     pub fn is_running(&self) -> bool {
         self.is_running.load(Ordering::Relaxed)
     }

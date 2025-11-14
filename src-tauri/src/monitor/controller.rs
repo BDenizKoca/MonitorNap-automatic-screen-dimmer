@@ -241,22 +241,6 @@ impl MonitorController {
             && cursor_y < self.info.y + self.info.height as i32
     }
 
-    /// Update monitor geometry (for display changes)
-    pub fn update_geometry(&mut self, info: MonitorInfo) -> Result<()> {
-        self.info = info;
-
-        if let Some(overlay) = &mut self.overlay {
-            overlay.update_geometry(
-                self.info.x,
-                self.info.y,
-                self.info.width,
-                self.info.height,
-            )?;
-        }
-
-        Ok(())
-    }
-
     /// Flash the overlay to identify this monitor
     pub async fn identify(&self) {
         if let Some(overlay) = &self.overlay {
@@ -275,11 +259,6 @@ impl MonitorController {
             temp_overlay.fade_to(0.0, 0.2, 5).await;
             let _ = overlay.hide();
         }
-    }
-
-    /// Update monitor configuration
-    pub fn update_config(&mut self, config: MonitorConfig) {
-        self.config = config;
     }
 
     /// Get monitor index

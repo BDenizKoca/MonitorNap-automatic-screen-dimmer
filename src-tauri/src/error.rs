@@ -21,9 +21,6 @@ pub enum MonitorNapError {
     #[error("Hotkey error: {0}")]
     Hotkey(String),
 
-    #[error("System error: {0}")]
-    System(String),
-
     #[error("Window error: {0}")]
     Window(String),
 }

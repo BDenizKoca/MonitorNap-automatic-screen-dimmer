@@ -5,7 +5,6 @@
 /// - System tray
 /// - Activity detection (cursor, keyboard, mouse)
 /// - Startup management
-
 pub mod activity;
 pub mod hotkey;
 pub mod tray;
