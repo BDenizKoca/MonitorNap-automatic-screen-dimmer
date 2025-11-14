@@ -19,6 +19,11 @@
                     <span id="status-text">MonitorNap is running</span>
                 </div>
             </div>
+            <div class="info-text">
+                MonitorNap dims each monitor after a period of inactivity (based on cursor position).
+                Minimizing to tray does not stop dimming; it continues in the background.
+                Press Exit to quit (brightness will be restored).
+            </div>
         </header>
 
         <section class="settings-section">
@@ -121,6 +126,9 @@
             </button>
             <button id="minimize" class="btn" title="Minimize to system tray (ESC)">
                 Minimize to Tray
+            </button>
+            <button id="exit" class="btn btn-danger" title="Exit MonitorNap (restores brightness)">
+                Exit
             </button>
             <div class="footer-info">
                 <span id="last-saved">Unsaved changes</span>

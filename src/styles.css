@@ -102,6 +102,17 @@ h1 {
     background: var(--dimmed);
 }
 
+.info-text {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-top: 12px;
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -462,6 +473,18 @@ input[type="checkbox"] {
 .btn-success:hover {
     background: #0e6b0e;
     border-color: #0e6b0e;
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: white;
+    border-color: var(--danger);
+    font-weight: 600;
+}
+
+.btn-danger:hover {
+    background: #b22a2e;
+    border-color: #b22a2e;
 }
 
 .btn-small {

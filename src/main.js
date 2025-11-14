@@ -367,6 +367,27 @@ function setupEventListeners() {
         await window.hide();
     });
 
+    // Exit - quit the application with confirmation
+    document.getElementById('exit').addEventListener('click', async () => {
+        if (hasUnsavedChanges) {
+            const confirmed = await showConfirm(
+                'Unsaved Changes',
+                'You have unsaved changes. Exit anyway? (Brightness will be restored)'
+            );
+            if (!confirmed) return;
+        } else {
+            const confirmed = await showConfirm(
+                'Exit MonitorNap',
+                'Are you sure you want to exit? (Brightness will be restored)'
+            );
+            if (!confirmed) return;
+        }
+
+        addLog('INFO', 'Application exiting');
+        const { exit } = window.__TAURI__.process;
+        await exit(0);
+    });
+
     // Collapse/Expand all
     document.getElementById('collapse-all').addEventListener('click', () => {
         document.querySelectorAll('.monitor-card').forEach(card => card.classList.add('collapsed'));
