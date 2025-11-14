@@ -9,8 +9,8 @@
 <body>
     <div class="container">
         <header>
-            <h1>🌙 MonitorNap</h1>
-            <p class="subtitle">Automatic Monitor Dimming</p>
+            <h1>MonitorNap</h1>
+            <p class="subtitle">Automatic Monitor Dimming - Tauri/Rust Edition</p>
             <div id="status" class="status">MonitorNap is running</div>
         </header>
 
@@ -36,7 +36,7 @@
                     <label for="hotkey">Global Hotkey</label>
                     <div class="input-group">
                         <input type="text" id="hotkey" placeholder="Ctrl+Alt+A" readonly>
-                        <button id="record-hotkey" class="btn btn-secondary">Record</button>
+                        <button id="set-hotkey" class="btn btn-secondary">Set</button>
                     </div>
                 </div>
 
@@ -58,7 +58,7 @@
 
         <section class="monitors-section">
             <h2>Monitor Settings</h2>
-            <div id="monitors-container">
+            <div id="monitors-container" class="monitors-scrollable">
                 <!-- Monitor settings will be dynamically inserted here -->
             </div>
         </section>
@@ -66,8 +66,8 @@
         <section class="actions-section">
             <h2>Quick Actions</h2>
             <div class="actions-grid">
-                <button id="nap-now" class="btn btn-primary">💤 Nap Now</button>
-                <button id="resume-now" class="btn btn-primary">☀️ Resume Now</button>
+                <button id="nap-now" class="btn btn-primary">Nap Now</button>
+                <button id="resume-now" class="btn btn-primary">Resume Now</button>
                 <div class="pause-group">
                     <span>Pause Dimming:</span>
                     <button class="btn btn-secondary" data-pause="15">15 min</button>
@@ -78,7 +78,7 @@
         </section>
 
         <footer>
-            <button id="save-config" class="btn btn-success">💾 Save Settings</button>
+            <button id="apply-settings" class="btn btn-success">Apply Settings</button>
             <button id="minimize" class="btn btn-secondary">Minimize to Tray</button>
         </footer>
     </div>

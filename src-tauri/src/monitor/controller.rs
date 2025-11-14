@@ -1,5 +1,5 @@
 /// Main monitor controller
-use super::{DdcController, MonitorInfo, OverlayWindow};
+use super::{get_monitors, DdcController, MonitorInfo, OverlayWindow};
 use crate::config::MonitorConfig;
 use crate::error::Result;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -285,6 +285,57 @@ impl MonitorController {
     /// Get monitor index
     pub fn index(&self) -> usize {
         self.config.monitor_index
+    }
+
+    /// Update display index and refresh geometry
+    pub async fn update_display_index(&mut self, display_index: usize) -> Result<()> {
+        self.config.display_index = display_index;
+        // Refresh geometry for the new display
+        let monitors = get_monitors();
+        if display_index < monitors.len() {
+            let monitor = &monitors[display_index];
+            self.info.x = monitor.x;
+            self.info.y = monitor.y;
+            self.info.width = monitor.width as u32;
+            self.info.height = monitor.height as u32;
+
+            // Update overlay if it exists
+            if let Some(overlay) = &mut self.overlay {
+                overlay.update_geometry(self.info.x, self.info.y, self.info.width, self.info.height)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Update DDC index and reinitialize hardware control
+    pub async fn update_ddc_index(&mut self, ddc_index: usize) -> Result<()> {
+        self.config.ddc_index = ddc_index;
+
+        // Reinitialize DDC controller
+        if self.config.enable_hardware_dimming {
+            let mut ddc = DdcController::new(self.config.ddc_index);
+            match ddc.init() {
+                Ok(_) => {
+                    self.ddc = Some(ddc);
+                }
+                Err(e) => {
+                    warn!("Failed to reinitialize DDC for index {}: {}", ddc_index, e);
+                    self.ddc = None;
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Update overlay color
+    pub async fn update_overlay_color(&mut self, color: &str) -> Result<()> {
+        self.config.overlay_color = color.to_string();
+
+        // Update existing overlay
+        if let Some(overlay) = &mut self.overlay {
+            overlay.set_color(color.to_string())?;
+        }
+        Ok(())
     }
 }
 

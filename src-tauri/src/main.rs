@@ -358,6 +358,143 @@ async fn get_pause_remaining(state: State<'_, Arc<Mutex<AppState>>>) -> Result<O
     Ok(None)
 }
 
+#[tauri::command]
+async fn update_monitor_display_index(
+    monitor_index: usize,
+    display_index: usize,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<()> {
+    let state_lock = state.lock().await;
+    let mut monitors = state_lock.monitors.lock().await;
+
+    if let Some(monitor) = monitors.get_mut(monitor_index) {
+        monitor.update_display_index(display_index).await?;
+
+        // Update config
+        let mut config_manager = state_lock.config_manager.lock().await;
+        if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
+            cfg.display_index = display_index;
+        }
+        config_manager.save()?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_monitor_ddc_index(
+    monitor_index: usize,
+    ddc_index: usize,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<()> {
+    let state_lock = state.lock().await;
+    let mut monitors = state_lock.monitors.lock().await;
+
+    if let Some(monitor) = monitors.get_mut(monitor_index) {
+        monitor.update_ddc_index(ddc_index).await?;
+
+        // Update config
+        let mut config_manager = state_lock.config_manager.lock().await;
+        if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
+            cfg.ddc_index = ddc_index;
+        }
+        config_manager.save()?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_monitor_hw_enabled(
+    monitor_index: usize,
+    enabled: bool,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<()> {
+    let state_lock = state.lock().await;
+    let mut config_manager = state_lock.config_manager.lock().await;
+
+    if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
+        cfg.enable_hardware_dimming = enabled;
+        config_manager.save()?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_monitor_sw_enabled(
+    monitor_index: usize,
+    enabled: bool,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<()> {
+    let state_lock = state.lock().await;
+    let mut config_manager = state_lock.config_manager.lock().await;
+
+    if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
+        cfg.enable_software_dimming = enabled;
+        config_manager.save()?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_monitor_hw_level(
+    monitor_index: usize,
+    level: u8,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<()> {
+    let state_lock = state.lock().await;
+    let mut config_manager = state_lock.config_manager.lock().await;
+
+    if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
+        cfg.hardware_dimming_level = level.min(100);
+        config_manager.save()?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_monitor_sw_level(
+    monitor_index: usize,
+    level: f32,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<()> {
+    let state_lock = state.lock().await;
+    let mut config_manager = state_lock.config_manager.lock().await;
+
+    if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
+        cfg.software_dimming_level = level.max(0.0).min(1.0);
+        config_manager.save()?;
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn update_monitor_color(
+    monitor_index: usize,
+    color: String,
+    state: State<'_, Arc<Mutex<AppState>>>,
+) -> Result<()> {
+    let state_lock = state.lock().await;
+    let mut monitors = state_lock.monitors.lock().await;
+
+    if let Some(monitor) = monitors.get_mut(monitor_index) {
+        monitor.update_overlay_color(&color).await?;
+
+        // Update config
+        let mut config_manager = state_lock.config_manager.lock().await;
+        if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
+            cfg.overlay_color = color;
+        }
+        config_manager.save()?;
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Initialize tracing
@@ -466,6 +603,13 @@ pub fn run() {
             identify_monitor,
             register_hotkey,
             get_pause_remaining,
+            update_monitor_display_index,
+            update_monitor_ddc_index,
+            update_monitor_hw_enabled,
+            update_monitor_sw_enabled,
+            update_monitor_hw_level,
+            update_monitor_sw_level,
+            update_monitor_color,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
