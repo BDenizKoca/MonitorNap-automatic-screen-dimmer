@@ -13,7 +13,7 @@ tauri-build = { version = "2.0", features = [] }
 
 [dependencies]
 # Tauri framework
-tauri = { version = "2.1", features = ["tray-icon", "image-png", "image-ico"] }
+tauri = { version = "2.1", features = ["tray-icon", "image-png", "image-ico", "webview-data-url"] }
 tauri-plugin-shell = "2.0"
 tauri-plugin-dialog = "2.0"
 tauri-plugin-fs = "2.0"
