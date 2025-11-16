@@ -93,6 +93,10 @@ async function init() {
         console.error('Failed to initialize:', error);
         showNotification('Failed to load configuration: ' + error, 'error');
         addLog('ERROR', 'Failed to load: ' + error);
+
+        // Clear loading state and show error
+        const container = document.getElementById('monitors-container');
+        container.innerHTML = '<div class="empty-state error"><p>Failed to load monitors</p><p style="font-size: 12px; color: var(--text-muted);">' + error + '</p></div>';
     }
 }
 
@@ -109,6 +113,11 @@ function populateSettings() {
 function renderMonitors() {
     const container = document.getElementById('monitors-container');
     container.innerHTML = '';
+
+    if (!monitors || monitors.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>No monitors detected</p><p style="font-size: 12px; color: var(--text-muted);">Make sure your monitors are connected and try restarting the application.</p></div>';
+        return;
+    }
 
     monitors.forEach((monitor, index) => {
         const mc = config.monitors[index] || {
