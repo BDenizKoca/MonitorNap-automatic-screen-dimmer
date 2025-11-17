@@ -277,6 +277,9 @@ impl OverlayWindow {
 
 impl Drop for OverlayWindow {
     fn drop(&mut self) {
-        let _ = self.destroy();
+        // Don't auto-destroy in Drop because multiple OverlayWindow instances
+        // may reference the same window label. The window should be explicitly
+        // destroyed when the MonitorController is dropped.
+        debug!("OverlayWindow {} dropped (window not destroyed)", self.label);
     }
 }

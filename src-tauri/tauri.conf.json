@@ -39,6 +39,7 @@
     "fileAssociations": []
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "MonitorNap",
@@ -58,12 +59,6 @@
       "devCsp": null,
       "freezePrototype": true,
       "dangerousDisableAssetCspModification": false
-    },
-    "trayIcon": {
-      "iconPath": "icons/icon.ico",
-      "iconAsTemplate": false,
-      "menuOnLeftClick": false,
-      "title": "MonitorNap"
     },
     "macOSPrivateApi": false
   },

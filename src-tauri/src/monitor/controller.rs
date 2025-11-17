@@ -61,12 +61,14 @@ impl MonitorController {
     /// Initialize DDC and overlay
     fn init(&mut self) -> Result<()> {
         info!(
-            "Initializing monitor {} ({}x{} at {}, {})",
+            "Initializing monitor {} ({}x{} at {}, {}) - HW enabled: {}, SW enabled: {}",
             self.config.monitor_index,
             self.info.width,
             self.info.height,
             self.info.x,
-            self.info.y
+            self.info.y,
+            self.config.enable_hardware_dimming,
+            self.config.enable_software_dimming
         );
 
         // Initialize DDC/CI if hardware dimming is enabled
@@ -331,5 +333,10 @@ impl Drop for MonitorController {
     fn drop(&mut self) {
         // Ensure monitor is restored when controller is dropped
         let _ = self.restore_immediate();
+
+        // Explicitly destroy the overlay window
+        if let Some(overlay) = &self.overlay {
+            let _ = overlay.destroy();
+        }
     }
 }

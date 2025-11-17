@@ -28,7 +28,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    async fn new(app_handle: AppHandle) -> Result<Self> {
+    async fn new(app_handle: AppHandle, hotkey_manager: Arc<HotkeyManager>) -> Result<Self> {
         // Load configuration
         let config_manager = ConfigManager::new()?;
         let config = config_manager.get().clone();
@@ -36,9 +36,6 @@ impl AppState {
         // Initialize activity monitor
         let activity_monitor = Arc::new(ActivityMonitor::new());
         activity_monitor.clone().start();
-
-        // Initialize hotkey manager
-        let hotkey_manager = Arc::new(HotkeyManager::new()?);
 
         // Initialize monitors
         let monitor_infos = get_monitors();
@@ -522,9 +519,15 @@ pub fn run() {
         .setup(|app| {
             let app_handle = app.handle().clone();
 
+            // IMPORTANT: Create HotkeyManager on main thread (required for Windows)
+            let hotkey_manager = Arc::new(
+                HotkeyManager::new()
+                    .expect("Failed to create hotkey manager")
+            );
+
             // Initialize application state
             let state = tauri::async_runtime::block_on(async {
-                AppState::new(app_handle.clone())
+                AppState::new(app_handle.clone(), hotkey_manager.clone())
                     .await
                     .expect("Failed to initialize application state")
             });
@@ -538,27 +541,27 @@ pub fn run() {
                 AppState::start_monitoring(state_clone, app_handle_clone).await;
             });
 
-            // Register hotkey
-            let state_clone = state.clone();
+            // Register hotkey on main thread (required for Windows)
+            let hotkey_manager_clone = hotkey_manager.clone();
             let app_handle_clone = app_handle.clone();
-            tauri::async_runtime::spawn(async move {
-                let state_lock = state_clone.lock().await;
+
+            // Load default hotkey from config
+            let hotkey_str = tauri::async_runtime::block_on(async {
+                let state_lock = state.lock().await;
                 let config = state_lock.config_manager.lock().await;
-                let hotkey_str = config.get().awake_mode_shortcut.clone();
-
-                let app_handle_inner = app_handle_clone.clone();
-                if let Err(e) = state_lock
-                    .hotkey_manager
-                    .register(&hotkey_str, move || {
-                        let _ = app_handle_inner.emit("toggle-awake-mode", ());
-                    })
-                {
-                    warn!("Failed to register default hotkey: {}", e);
-                }
-
-                // Start hotkey listener
-                state_lock.hotkey_manager.clone().start_listening();
+                config.get().awake_mode_shortcut.clone()
             });
+
+            // Register on main thread
+            let app_handle_inner = app_handle_clone.clone();
+            if let Err(e) = hotkey_manager_clone.register(&hotkey_str, move || {
+                let _ = app_handle_inner.emit("toggle-awake-mode", ());
+            }) {
+                warn!("Failed to register default hotkey: {}", e);
+            }
+
+            // Start hotkey listener
+            hotkey_manager_clone.start_listening();
 
             // Initialize system tray
             let tray = TrayManager::new(app_handle.clone());
