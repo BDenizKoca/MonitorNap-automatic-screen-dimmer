@@ -47,12 +47,17 @@ grep -q "overlay.destroy()" src-tauri/src/monitor/controller.rs
 check "MonitorController explicitly destroys overlay"
 
 echo ""
-echo "7. Building release version..."
+echo "7. Checking hotkey listener in async context..."
+grep -A 2 "Start hotkey listener" src-tauri/src/main.rs | grep -q "async_runtime::spawn"
+check "Hotkey listener wrapped in async runtime"
+
+echo ""
+echo "8. Building release version..."
 cargo build --release --manifest-path src-tauri/Cargo.toml > /dev/null 2>&1
 check "Release build succeeds"
 
 echo ""
-echo "8. Checking binary size..."
+echo "9. Checking binary size..."
 if [ -f "src-tauri/target/release/monitornap" ]; then
   SIZE=$(du -h src-tauri/target/release/monitornap | cut -f1)
   echo -e "${GREEN}✓${NC} Binary created: ${SIZE}"
