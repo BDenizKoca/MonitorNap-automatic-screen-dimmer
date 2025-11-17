@@ -2,6 +2,12 @@ const invoke = window.__TAURI__.core.invoke;
 const listen = window.__TAURI__.event.listen;
 const getCurrentWindow = window.__TAURI__.window.getCurrentWindow;
 
+// Constants
+const MAX_LOG_ENTRIES = 100;
+const NOTIFICATION_DISPLAY_TIME_MS = 3000;
+const HOTKEY_RECORD_TIMEOUT_MS = 10000;
+const EXIT_RESTORATION_DELAY_MS = 500;
+
 // State
 let config = null;
 let monitors = [];
@@ -31,7 +37,7 @@ function markSaved() {
 function addLog(type, message) {
     const entry = { time: new Date().toLocaleTimeString(), type, message };
     logs.unshift(entry);
-    if (logs.length > 100) logs = logs.slice(0, 100);
+    if (logs.length > MAX_LOG_ENTRIES) logs = logs.slice(0, MAX_LOG_ENTRIES);
     localStorage.setItem('monitornapLogs', JSON.stringify(logs));
     renderLogs();
 }
@@ -87,7 +93,7 @@ function showNotification(message, type = 'success') {
     const notification = document.getElementById('notification');
     notification.textContent = message;
     notification.className = `notification ${type === 'error' ? 'error' : ''}`;
-    setTimeout(() => notification.className = 'notification hidden', 3000);
+    setTimeout(() => notification.className = 'notification hidden', NOTIFICATION_DISPLAY_TIME_MS);
 }
 
 // Initialize
@@ -365,7 +371,7 @@ function setupEventListeners() {
 
         document.addEventListener('keydown', handleKeyDown, true);
 
-        // Timeout after 10 seconds
+        // Timeout after configured duration
         setTimeout(() => {
             if (isRecordingHotkey) {
                 document.removeEventListener('keydown', handleKeyDown, true);
@@ -375,7 +381,7 @@ function setupEventListeners() {
                 isRecordingHotkey = false;
                 showNotification('Recording timeout', 'error');
             }
-        }, 10000);
+        }, HOTKEY_RECORD_TIMEOUT_MS);
     });
 
     document.getElementById('set-hotkey').addEventListener('click', async () => {
@@ -483,7 +489,7 @@ function setupEventListeners() {
         }
 
         // Wait a moment for restoration to complete
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, EXIT_RESTORATION_DELAY_MS));
 
         const { exit } = window.__TAURI__.process;
         await exit(0);

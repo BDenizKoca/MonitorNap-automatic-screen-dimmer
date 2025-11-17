@@ -17,6 +17,9 @@ use tauri::{AppHandle, Emitter, Manager, State};
 use tokio::sync::Mutex;
 use tracing::{error, info, warn};
 
+/// Monitoring loop poll interval in seconds
+const MONITOR_POLL_INTERVAL_SECS: u64 = 2;
+
 /// Application state
 pub struct AppState {
     config_manager: Arc<Mutex<ConfigManager>>,
@@ -98,66 +101,82 @@ impl AppState {
     async fn start_monitoring(state: Arc<Mutex<Self>>, app_handle: AppHandle) {
         tokio::spawn(async move {
             loop {
-                tokio::time::sleep(Duration::from_secs(2)).await;
+                tokio::time::sleep(Duration::from_secs(MONITOR_POLL_INTERVAL_SECS)).await;
 
-                let state_lock = state.lock().await;
+                // Minimize lock scope - extract values needed and release immediately
+                let (awake, cursor_x, cursor_y, inactivity_limit, fade_time, fade_steps) = {
+                    let state_lock = state.lock().await;
 
-                // Check if awake mode is active
-                let awake = *state_lock.awake_mode.lock().await;
+                    // Check and handle pause timer
+                    let mut pause_end = state_lock.pause_end_time.lock().await;
+                    if let Some(end_time) = *pause_end {
+                        if std::time::Instant::now() >= end_time {
+                            *pause_end = None;
+                            drop(pause_end); // Release pause_end lock before acquiring awake_mode
 
-                // Check pause timer
-                let mut pause_end = state_lock.pause_end_time.lock().await;
-                if let Some(end_time) = *pause_end {
-                    if std::time::Instant::now() >= end_time {
-                        *pause_end = None;
-                        // Disable awake mode after pause expires
-                        *state_lock.awake_mode.lock().await = false;
-                        let _ = app_handle.emit("awake-mode-changed", false);
-                        info!("Pause timer expired, resuming dimming");
+                            // Disable awake mode after pause expires
+                            *state_lock.awake_mode.lock().await = false;
+                            let _ = app_handle.emit("awake-mode-changed", false);
+                            info!("Pause timer expired, resuming dimming");
+                        }
+                    } else {
+                        drop(pause_end); // Release explicitly
                     }
-                }
 
+                    let awake = *state_lock.awake_mode.lock().await;
+                    let cursor_pos = state_lock.activity_monitor.get_cursor_pos().await;
+
+                    let config_lock = state_lock.config_manager.lock().await;
+                    let config_values = (
+                        config_lock.get().inactivity_limit as u64,
+                        config_lock.get().overlay_fade_time,
+                        config_lock.get().overlay_fade_steps,
+                    );
+                    drop(config_lock); // Release config lock
+
+                    (awake, cursor_pos.0, cursor_pos.1, config_values.0, config_values.1, config_values.2)
+                    // state_lock is dropped here
+                };
+
+                // Handle awake mode restoration without holding state lock
                 if awake {
-                    // If awake mode is on, restore all monitors
+                    let state_lock = state.lock().await;
                     let monitors = state_lock.monitors.lock().await;
                     for monitor in monitors.iter() {
                         if monitor.is_dimmed() {
                             let _ = monitor.restore_immediate();
                         }
                     }
+                    drop(monitors);
+                    drop(state_lock);
                     continue;
                 }
 
-                // Get cursor position
-                let (cursor_x, cursor_y) = state_lock.activity_monitor.get_cursor_pos().await;
+                // Check each monitor without holding state lock continuously
+                {
+                    let state_lock = state.lock().await;
+                    let monitors = state_lock.monitors.lock().await;
 
-                // Check each monitor
-                let monitors = state_lock.monitors.lock().await;
-                let config = state_lock.config_manager.lock().await;
-                let inactivity_limit = config.get().inactivity_limit as u64;
+                    for monitor in monitors.iter() {
+                        // Check if cursor is on this monitor
+                        if monitor.is_cursor_on_monitor(cursor_x, cursor_y) {
+                            monitor.update_activity().await;
 
-                for monitor in monitors.iter() {
-                    // Check if cursor is on this monitor
-                    if monitor.is_cursor_on_monitor(cursor_x, cursor_y) {
-                        monitor.update_activity().await;
+                            // Restore if dimmed
+                            if monitor.is_dimmed() {
+                                let _ = monitor.restore(fade_time, fade_steps).await;
+                            }
+                        } else {
+                            // Check inactivity
+                            let idle_time = monitor.get_idle_time().await;
 
-                        // Restore if dimmed
-                        if monitor.is_dimmed() {
-                            let fade_time = config.get().overlay_fade_time;
-                            let fade_steps = config.get().overlay_fade_steps;
-                            let _ = monitor.restore(fade_time, fade_steps).await;
-                        }
-                    } else {
-                        // Check inactivity
-                        let idle_time = monitor.get_idle_time().await;
-
-                        if idle_time >= inactivity_limit && !monitor.is_dimmed() {
-                            // Dim this monitor
-                            let fade_time = config.get().overlay_fade_time;
-                            let fade_steps = config.get().overlay_fade_steps;
-                            let _ = monitor.dim(fade_time, fade_steps).await;
+                            if idle_time >= inactivity_limit && !monitor.is_dimmed() {
+                                // Dim this monitor
+                                let _ = monitor.dim(fade_time, fade_steps).await;
+                            }
                         }
                     }
+                    // monitors and state_lock dropped here
                 }
             }
         });

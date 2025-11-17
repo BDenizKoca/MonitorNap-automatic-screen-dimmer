@@ -8,6 +8,15 @@ use std::time::Instant;
 use tauri::AppHandle;
 use tracing::{debug, info, warn};
 
+/// Fade multiplier for faster monitor restoration (5% of normal fade time)
+const RESTORE_FADE_MULTIPLIER: f32 = 0.05;
+
+/// Minimum fade steps for quick restoration
+const RESTORE_MIN_FADE_STEPS: u32 = 3;
+
+/// Duration in milliseconds for monitor identification flash
+const IDENTIFY_FLASH_DURATION_MS: u64 = 1000;
+
 /// Monitor controller handles dimming and activity detection for a single monitor
 pub struct MonitorController {
     /// Monitor configuration
@@ -189,7 +198,7 @@ impl MonitorController {
                 self.config.overlay_color.clone(),
             );
             // Faster restore for instant wake-up feel
-            overlay_clone.fade_to(0.0, fade_time * 0.05, fade_steps.min(3)).await;
+            overlay_clone.fade_to(0.0, fade_time * RESTORE_FADE_MULTIPLIER, fade_steps.min(RESTORE_MIN_FADE_STEPS)).await;
             overlay.hide()?;
         }
 
@@ -270,7 +279,7 @@ impl MonitorController {
                 self.config.overlay_color.clone(),
             );
             temp_overlay.fade_to(0.6, 0.2, 5).await;
-            tokio::time::sleep(tokio::time::Duration::from_millis(1000)).await;
+            tokio::time::sleep(tokio::time::Duration::from_millis(IDENTIFY_FLASH_DURATION_MS)).await;
             temp_overlay.fade_to(0.0, 0.2, 5).await;
             let _ = overlay.hide();
         }
