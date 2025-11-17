@@ -560,8 +560,10 @@ pub fn run() {
                 warn!("Failed to register default hotkey: {}", e);
             }
 
-            // Start hotkey listener
-            hotkey_manager_clone.start_listening();
+            // Start hotkey listener in async context
+            tauri::async_runtime::spawn(async move {
+                hotkey_manager_clone.start_listening();
+            });
 
             // Initialize system tray
             let tray = TrayManager::new(app_handle.clone());
