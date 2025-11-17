@@ -134,29 +134,33 @@ impl MonitorController {
         info!("Dimming monitor {}", self.config.monitor_index);
         self.is_dimmed.store(true, Ordering::Relaxed);
 
-        // Software dimming
-        if let Some(overlay) = &self.overlay {
-            overlay.show()?;
-            // Clone overlay for async operation
-            let mut overlay_clone = OverlayWindow::new(
-                self.app_handle.clone(),
-                self.config.monitor_index,
-                self.info.x,
-                self.info.y,
-                self.info.width,
-                self.info.height,
-                self.config.overlay_color.clone(),
-            );
-            overlay_clone.fade_to(self.config.software_dimming_level, fade_time, fade_steps).await;
+        // Software dimming - only if enabled in config
+        if self.config.enable_software_dimming {
+            if let Some(overlay) = &self.overlay {
+                overlay.show()?;
+                // Clone overlay for async operation
+                let mut overlay_clone = OverlayWindow::new(
+                    self.app_handle.clone(),
+                    self.config.monitor_index,
+                    self.info.x,
+                    self.info.y,
+                    self.info.width,
+                    self.info.height,
+                    self.config.overlay_color.clone(),
+                );
+                overlay_clone.fade_to(self.config.software_dimming_level, fade_time, fade_steps).await;
+            }
         }
 
-        // Hardware dimming
-        if let Some(ddc) = &self.ddc {
-            if let Err(e) = ddc.dim(self.config.hardware_dimming_level) {
-                warn!(
-                    "Failed to dim monitor {} via DDC: {}",
-                    self.config.monitor_index, e
-                );
+        // Hardware dimming - only if enabled in config
+        if self.config.enable_hardware_dimming {
+            if let Some(ddc) = &self.ddc {
+                if let Err(e) = ddc.dim(self.config.hardware_dimming_level) {
+                    warn!(
+                        "Failed to dim monitor {} via DDC: {}",
+                        self.config.monitor_index, e
+                    );
+                }
             }
         }
 
@@ -326,6 +330,78 @@ impl MonitorController {
             overlay.set_color(color.to_string())?;
         }
         Ok(())
+    }
+
+    /// Update hardware dimming enabled state
+    pub async fn update_hw_enabled(&mut self, enabled: bool) -> Result<()> {
+        self.config.enable_hardware_dimming = enabled;
+
+        // Reinitialize or remove DDC controller
+        if enabled {
+            let mut ddc = DdcController::new(self.config.ddc_index);
+            match ddc.init() {
+                Ok(_) => {
+                    info!("Enabled hardware dimming for monitor {}", self.config.monitor_index);
+                    self.ddc = Some(ddc);
+                }
+                Err(e) => {
+                    warn!("Failed to enable hardware dimming for monitor {}: {}", self.config.monitor_index, e);
+                    self.ddc = None;
+                }
+            }
+        } else {
+            info!("Disabled hardware dimming for monitor {}", self.config.monitor_index);
+            self.ddc = None;
+        }
+        Ok(())
+    }
+
+    /// Update software dimming enabled state
+    pub async fn update_sw_enabled(&mut self, enabled: bool) -> Result<()> {
+        self.config.enable_software_dimming = enabled;
+
+        // Reinitialize or remove overlay
+        if enabled {
+            let overlay = OverlayWindow::new(
+                self.app_handle.clone(),
+                self.config.monitor_index,
+                self.info.x,
+                self.info.y,
+                self.info.width,
+                self.info.height,
+                self.config.overlay_color.clone(),
+            );
+
+            match overlay.init() {
+                Ok(_) => {
+                    info!("Enabled software dimming for monitor {}", self.config.monitor_index);
+                    self.overlay = Some(overlay);
+                }
+                Err(e) => {
+                    warn!("Failed to enable software dimming for monitor {}: {}", self.config.monitor_index, e);
+                    self.overlay = None;
+                }
+            }
+        } else {
+            info!("Disabled software dimming for monitor {}", self.config.monitor_index);
+            // Hide and destroy overlay
+            if let Some(overlay) = &self.overlay {
+                let _ = overlay.hide();
+                let _ = overlay.destroy();
+            }
+            self.overlay = None;
+        }
+        Ok(())
+    }
+
+    /// Update hardware dimming level
+    pub fn update_hw_level(&mut self, level: u8) {
+        self.config.hardware_dimming_level = level;
+    }
+
+    /// Update software dimming level
+    pub fn update_sw_level(&mut self, level: f32) {
+        self.config.software_dimming_level = level;
     }
 }
 

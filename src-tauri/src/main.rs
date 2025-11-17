@@ -423,9 +423,16 @@ async fn update_monitor_hw_enabled(
     let state_lock = state.lock().await;
     let mut config_manager = state_lock.config_manager.lock().await;
 
+    // Update config
     if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
         cfg.enable_hardware_dimming = enabled;
         config_manager.save()?;
+    }
+
+    // Update monitor controller
+    let mut monitors = state_lock.monitors.lock().await;
+    if let Some(controller) = monitors.get_mut(monitor_index) {
+        controller.update_hw_enabled(enabled).await?;
     }
 
     Ok(())
@@ -440,9 +447,16 @@ async fn update_monitor_sw_enabled(
     let state_lock = state.lock().await;
     let mut config_manager = state_lock.config_manager.lock().await;
 
+    // Update config
     if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
         cfg.enable_software_dimming = enabled;
         config_manager.save()?;
+    }
+
+    // Update monitor controller
+    let mut monitors = state_lock.monitors.lock().await;
+    if let Some(controller) = monitors.get_mut(monitor_index) {
+        controller.update_sw_enabled(enabled).await?;
     }
 
     Ok(())
@@ -457,9 +471,16 @@ async fn update_monitor_hw_level(
     let state_lock = state.lock().await;
     let mut config_manager = state_lock.config_manager.lock().await;
 
+    // Update config
     if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
         cfg.hardware_dimming_level = level.min(100);
         config_manager.save()?;
+    }
+
+    // Update monitor controller
+    let mut monitors = state_lock.monitors.lock().await;
+    if let Some(controller) = monitors.get_mut(monitor_index) {
+        controller.update_hw_level(level.min(100));
     }
 
     Ok(())
@@ -474,9 +495,16 @@ async fn update_monitor_sw_level(
     let state_lock = state.lock().await;
     let mut config_manager = state_lock.config_manager.lock().await;
 
+    // Update config
     if let Some(cfg) = config_manager.get_mut().monitors.get_mut(monitor_index) {
         cfg.software_dimming_level = level.clamp(0.0, 1.0);
         config_manager.save()?;
+    }
+
+    // Update monitor controller
+    let mut monitors = state_lock.monitors.lock().await;
+    if let Some(controller) = monitors.get_mut(monitor_index) {
+        controller.update_sw_level(level.clamp(0.0, 1.0));
     }
 
     Ok(())

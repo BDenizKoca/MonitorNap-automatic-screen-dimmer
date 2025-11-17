@@ -55,15 +55,30 @@ function renderLogs() {
 function showConfirm(title, message) {
     return new Promise((resolve) => {
         const dialog = document.getElementById('confirm-dialog');
+        const confirmBtn = document.getElementById('dialog-confirm');
+        const cancelBtn = document.getElementById('dialog-cancel');
+
         document.getElementById('dialog-title').textContent = title;
         document.getElementById('dialog-message').textContent = message;
         dialog.classList.remove('hidden');
-        
-        const confirm = () => { dialog.classList.add('hidden'); resolve(true); };
-        const cancel = () => { dialog.classList.add('hidden'); resolve(false); };
-        
-        document.getElementById('dialog-confirm').onclick = confirm;
-        document.getElementById('dialog-cancel').onclick = cancel;
+
+        // Remove any existing event listeners by cloning the buttons
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+        const confirm = () => {
+            dialog.classList.add('hidden');
+            resolve(true);
+        };
+        const cancel = () => {
+            dialog.classList.add('hidden');
+            resolve(false);
+        };
+
+        newConfirmBtn.onclick = confirm;
+        newCancelBtn.onclick = cancel;
     });
 }
 
@@ -390,24 +405,22 @@ function setupEventListeners() {
         markUnsaved();
     });
 
-    // Action buttons
-    document.getElementById('nap-now').addEventListener('click', async () => {
+    // Toggle napping button
+    document.getElementById('toggle-napping').addEventListener('click', async () => {
         try {
-            await invoke('nap_now');
-            showNotification('Dimming all monitors', 'success');
-            addLog('ACTION', 'Nap now triggered');
+            if (config.awake_mode) {
+                // Currently awake, start napping
+                await invoke('nap_now');
+                showNotification('Started napping (dimming monitors)', 'success');
+                addLog('ACTION', 'Started napping');
+            } else {
+                // Currently napping, stop napping
+                await invoke('resume_now');
+                showNotification('Stopped napping (awake mode)', 'success');
+                addLog('ACTION', 'Stopped napping');
+            }
         } catch (error) {
-            showNotification('Failed to dim: ' + error, 'error');
-        }
-    });
-
-    document.getElementById('resume-now').addEventListener('click', async () => {
-        try {
-            await invoke('resume_now');
-            showNotification('Resuming normal operation', 'success');
-            addLog('ACTION', 'Resume now triggered');
-        } catch (error) {
-            showNotification('Failed to resume: ' + error, 'error');
+            showNotification('Failed to toggle napping: ' + error, 'error');
         }
     });
 
@@ -461,6 +474,17 @@ function setupEventListeners() {
         }
 
         addLog('INFO', 'Application exiting');
+
+        // Explicitly restore all monitors before exiting
+        try {
+            await invoke('resume_now');
+        } catch (error) {
+            console.error('Failed to restore monitors:', error);
+        }
+
+        // Wait a moment for restoration to complete
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         const { exit } = window.__TAURI__.process;
         await exit(0);
     });
@@ -605,13 +629,16 @@ async function setupBackendListeners() {
 function updateStatusDisplay() {
     const status = document.getElementById('status');
     const statusText = document.getElementById('status-text');
-    
+    const toggleButton = document.getElementById('toggle-napping');
+
     if (config.awake_mode) {
         statusText.textContent = 'Awake Mode ON (no dimming)';
         status.classList.add('awake');
+        if (toggleButton) toggleButton.textContent = 'Start Napping';
     } else {
         statusText.textContent = 'MonitorNap is running';
         status.classList.remove('awake');
+        if (toggleButton) toggleButton.textContent = 'Stop Napping';
     }
 }
 

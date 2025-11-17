@@ -44,7 +44,7 @@ impl Default for AppConfig {
             inactivity_limit: 10,
             overlay_fade_time: 0.5,
             overlay_fade_steps: 10,
-            awake_mode: false,
+            awake_mode: true,  // Start with napping OFF by default
             debug_mode: false,
             start_on_startup: false,
             start_minimized: false,
@@ -218,7 +218,7 @@ mod tests {
     fn test_default_config() {
         let config = AppConfig::default();
         assert_eq!(config.inactivity_limit, 10);
-        assert!(!config.awake_mode);
+        assert!(config.awake_mode);  // Default is now awake (napping off)
         assert_eq!(config.awake_mode_shortcut, "Ctrl+Alt+A");
     }
 
