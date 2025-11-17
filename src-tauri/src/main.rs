@@ -562,7 +562,7 @@ pub fn run() {
 
             // Start hotkey listener in async context
             tauri::async_runtime::spawn(async move {
-                hotkey_manager_clone.start_listening();
+                hotkey_manager_clone.start_listening().await;
             });
 
             // Initialize system tray

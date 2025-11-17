@@ -180,32 +180,31 @@ impl HotkeyManager {
     }
 
     /// Start listening for hotkey events
-    pub fn start_listening(self: Arc<Self>) {
-        tokio::spawn(async move {
-            let receiver = GlobalHotKeyEvent::receiver();
+    /// This is an async function that runs the hotkey event loop
+    pub async fn start_listening(self: Arc<Self>) {
+        let receiver = GlobalHotKeyEvent::receiver();
 
-            loop {
-                if let Ok(event) = receiver.try_recv() {
-                    debug!("Hotkey event received: {:?}", event);
+        loop {
+            if let Ok(event) = receiver.try_recv() {
+                debug!("Hotkey event received: {:?}", event);
 
-                    // Check if this matches our registered hotkey
-                    let current = self.current_hotkey.lock()
-                        .expect("Hotkey mutex poisoned");
-                    if let Some(hotkey) = current.as_ref() {
-                        if event.id == hotkey.id() {
-                            debug!("Hotkey matched, executing callback");
-                            let callback = self.callback.lock()
-                                .expect("Callback mutex poisoned");
-                            if let Some(cb) = callback.as_ref() {
-                                cb();
-                            }
+                // Check if this matches our registered hotkey
+                let current = self.current_hotkey.lock()
+                    .expect("Hotkey mutex poisoned");
+                if let Some(hotkey) = current.as_ref() {
+                    if event.id == hotkey.id() {
+                        debug!("Hotkey matched, executing callback");
+                        let callback = self.callback.lock()
+                            .expect("Callback mutex poisoned");
+                        if let Some(cb) = callback.as_ref() {
+                            cb();
                         }
                     }
                 }
-
-                tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
             }
-        });
+
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        }
     }
 }
 

@@ -58,7 +58,19 @@
       "csp": null,
       "devCsp": null,
       "freezePrototype": true,
-      "dangerousDisableAssetCspModification": false
+      "dangerousDisableAssetCspModification": false,
+      "capabilities": [
+        {
+          "identifier": "main-capability",
+          "description": "Capability for the main window",
+          "windows": ["main"],
+          "permissions": [
+            "core:default",
+            "core:event:allow-listen",
+            "core:event:allow-emit"
+          ]
+        }
+      ]
     },
     "macOSPrivateApi": false
   },
