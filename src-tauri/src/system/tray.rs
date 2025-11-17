@@ -1,6 +1,7 @@
 /// System tray management
 use tauri::{
     AppHandle, Emitter, Manager,
+    image::Image,
     menu::{Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
 };
@@ -111,8 +112,13 @@ impl TrayManager {
             ],
         )?;
 
+        // Load the tray icon
+        let icon_bytes = include_bytes!("../../icons/icon.ico");
+        let icon = Image::from_bytes(icon_bytes)?;
+
         // Build the tray icon
         let _tray = TrayIconBuilder::new()
+            .icon(icon)
             .menu(&menu)
             .tooltip("MonitorNap")
             .on_menu_event(|app, event| {
